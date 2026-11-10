@@ -1,0 +1,11 @@
+{
+  "export": [
+    "Idle", "Walk", "Run", "Walk Backward", "Run Backward", "Strafe Left", "Strafe Right", "Jump", "Land", "Hit Reaction", "Death", "Victory", "Wave", "Crouch Idle",
+    "Melee Punch", "Punch", "Cross Punch", "Elbow Punch", "Kick", "Side Kick",
+    "Rifle Idle", "Rifle Walk", "Rifle Run", "Rifle Walk Backward", "Rifle Crouch Walk", "Rifle Kneel", "Rifle Jump",
+    "Rifle Reload", "Rifle Death", "Rifle Aim", "Rifle Fire", "Rifle Aim Sniper", "Rifle Fire Sniper",
+    "Rifle Walk Tir", "Rifle Run Tir", "Rifle Walk Backward Tir", "Rifle Crouch Walk Tir", "Rifle Kneel Tir", "Rifle Jump Tir",
+    "Pistol Idle", "Pistol Walk", "Pistol Run", "Pistol Walk Backward", "Pistol Strafe", "Pistol Strafe Right", "Pistol Kneel", "Pistol Jump", "Pistol Whip",
+    "Pistol Aim Sniper", "Pistol Idle Tir", "Pistol Walk Tir", "Pistol Run Tir", "Pistol Walk Backward Tir", "Pistol Strafe Tir", "Pistol Strafe Right Tir", "Pistol Kneel Tir", "Pistol Jump Tir"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "sahel-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python -m http.server 8080"
+  },
+  "devDependencies": {
+    "three": "0.170.0"
+  }
+}

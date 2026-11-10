@@ -1,0 +1,45 @@
+# === Dépendances ==========================================================
+node_modules/
+package-lock.json
+
+# === Unity ================================================================
+# Dossiers générés par l'éditeur (à ne pas versionner)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Uu]ser[Ss]ettings/
+[Mm]emory[Cc]ache/
+[Cc]ache/
+[Ll]ogs/
+
+# Fichiers temporaires / crash
+*.csproj
+*.sln
+*.userprefs
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+*.mdb
+*.mono
+*.mdb
+*.orig
+*.DS_Store
+Thumbs.db
+
+# Dossier Outils~ de Unity (brouillons locaux)
+Outils~/
+
+# Logs divers
+*.log
+tundra.log.json
+fullprofile.json
+
+# === OS ===================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Fin ==================================================================

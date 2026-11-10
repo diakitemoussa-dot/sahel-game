@@ -1,0 +1,528 @@
+{
+  "npcs": [
+    {
+      "id": "pnj_1",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 3,
+      "route": [
+        [
+          -176,
+          -177
+        ],
+        [
+          -168,
+          -177
+        ],
+        [
+          -168,
+          -171
+        ],
+        [
+          -176,
+          -171
+        ]
+      ],
+      "skin": "noire"
+    },
+    {
+      "id": "pnj_2",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 4,
+      "route": [
+        [
+          -164.5,
+          -168.4
+        ],
+        [
+          -156.5,
+          -168.4
+        ],
+        [
+          -156.5,
+          -162.4
+        ],
+        [
+          -164.5,
+          -162.4
+        ]
+      ],
+      "skin": "blanche"
+    },
+    {
+      "id": "pnj_3",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 2.5,
+      "route": [
+        [
+          -191.5,
+          -157.3
+        ],
+        [
+          -183.5,
+          -157.3
+        ],
+        [
+          -183.5,
+          -151.3
+        ],
+        [
+          -191.5,
+          -151.3
+        ]
+      ],
+      "skin": "metisse"
+    },
+    {
+      "id": "pnj_4",
+      "zone": "fort",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "noire",
+      "weapon": "rifle",
+      "wait": 3,
+      "route": [
+        [
+          -122,
+          165
+        ],
+        [
+          -114,
+          165
+        ],
+        [
+          -114,
+          171
+        ],
+        [
+          -122,
+          171
+        ]
+      ]
+    },
+    {
+      "id": "pnj_5",
+      "zone": "fort",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "blanche",
+      "weapon": "rifle",
+      "wait": 4,
+      "route": [
+        [
+          -138,
+          165
+        ],
+        [
+          -130,
+          165
+        ],
+        [
+          -130,
+          171
+        ],
+        [
+          -138,
+          171
+        ]
+      ]
+    },
+    {
+      "id": "pnj_6",
+      "zone": "fort",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "wait": 2.5,
+      "route": [
+        [
+          -158,
+          178.9
+        ],
+        [
+          -150,
+          178.9
+        ],
+        [
+          -150,
+          184.9
+        ],
+        [
+          -158,
+          184.9
+        ]
+      ]
+    },
+    {
+      "id": "pnj_7",
+      "zone": "village",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "noire",
+      "weapon": "rifle",
+      "wait": 3.5,
+      "route": [
+        [
+          139.3,
+          169.5
+        ],
+        [
+          148.7,
+          169.5
+        ],
+        [
+          148.7,
+          176.5
+        ],
+        [
+          139.3,
+          176.5
+        ]
+      ]
+    },
+    {
+      "id": "pnj_8",
+      "zone": "village",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "blanche",
+      "weapon": "rifle",
+      "wait": 3,
+      "route": [
+        [
+          156,
+          170
+        ],
+        [
+          164,
+          170
+        ],
+        [
+          164,
+          176
+        ],
+        [
+          156,
+          176
+        ]
+      ]
+    },
+    {
+      "id": "pnj_9",
+      "zone": "village",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "wait": 4,
+      "route": [
+        [
+          132,
+          183.9
+        ],
+        [
+          140,
+          183.9
+        ],
+        [
+          140,
+          189.9
+        ],
+        [
+          132,
+          189.9
+        ]
+      ]
+    },
+    {
+      "id": "pnj_10",
+      "zone": "oasis",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "noire",
+      "weapon": "rifle",
+      "wait": 2.5,
+      "route": [
+        [
+          157.7,
+          -118.6
+        ],
+        [
+          167.2,
+          -118.6
+        ],
+        [
+          167.2,
+          -111.4
+        ],
+        [
+          157.7,
+          -111.4
+        ]
+      ]
+    },
+    {
+      "id": "pnj_11",
+      "zone": "oasis",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "blanche",
+      "weapon": "rifle",
+      "wait": 3.5,
+      "route": [
+        [
+          168,
+          -104.1
+        ],
+        [
+          176,
+          -104.1
+        ],
+        [
+          176,
+          -98.1
+        ],
+        [
+          168,
+          -98.1
+        ]
+      ]
+    },
+    {
+      "id": "pnj_12",
+      "zone": "convoi",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "wait": 3,
+      "route": [
+        [
+          -0.7,
+          -80.5
+        ],
+        [
+          8.7,
+          -80.5
+        ],
+        [
+          8.7,
+          -73.5
+        ],
+        [
+          -0.7,
+          -73.5
+        ]
+      ]
+    },
+    {
+      "id": "pnj_13",
+      "zone": "convoi",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "noire",
+      "weapon": "rifle",
+      "wait": 4,
+      "route": [
+        [
+          16,
+          -80
+        ],
+        [
+          24,
+          -80
+        ],
+        [
+          24,
+          -74
+        ],
+        [
+          16,
+          -74
+        ]
+      ]
+    },
+    {
+      "id": "pnj_14",
+      "zone": "convoi",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "blanche",
+      "weapon": "rifle",
+      "wait": 2.5,
+      "route": [
+        [
+          -16,
+          -80
+        ],
+        [
+          -8,
+          -80
+        ],
+        [
+          -8,
+          -74
+        ],
+        [
+          -16,
+          -74
+        ]
+      ]
+    },
+    {
+      "id": "pnj_15",
+      "zone": "milieu1",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "wait": 3.5,
+      "route": [
+        [
+          -60.8,
+          4.4
+        ],
+        [
+          -43.2,
+          4.4
+        ],
+        [
+          -43.2,
+          17.6
+        ],
+        [
+          -60.8,
+          17.6
+        ]
+      ]
+    },
+    {
+      "id": "pnj_16",
+      "zone": "milieu2",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "noire",
+      "weapon": "rifle",
+      "wait": 3,
+      "route": [
+        [
+          58.1,
+          38.5
+        ],
+        [
+          69.9,
+          38.5
+        ],
+        [
+          69.9,
+          47.5
+        ],
+        [
+          58.1,
+          47.5
+        ]
+      ]
+    },
+    {
+      "id": "pnj_17",
+      "zone": "nord",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "blanche",
+      "weapon": "rifle",
+      "wait": 4,
+      "route": [
+        [
+          -0.2,
+          124.7
+        ],
+        [
+          16.2,
+          124.7
+        ],
+        [
+          16.2,
+          137
+        ],
+        [
+          -0.2,
+          137
+        ]
+      ]
+    },
+    {
+      "id": "pnj_18",
+      "zone": "sud",
+      "far": true,
+      "uniform": "pnj_milicien",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "wait": 2.5,
+      "route": [
+        [
+          -60.7,
+          -130.5
+        ],
+        [
+          -51.3,
+          -130.5
+        ],
+        [
+          -51.3,
+          -123.5
+        ],
+        [
+          -60.7,
+          -123.5
+        ]
+      ]
+    }
+  ],
+  "allies": [
+    {
+      "id": "allie_1",
+      "uniform": "militaire",
+      "weapon": "rifle",
+      "start": [
+        -180,
+        -171
+      ],
+      "slot": [
+        2.6,
+        -0.6
+      ],
+      "skin": "blanche"
+    },
+    {
+      "id": "allie_2",
+      "uniform": "militaire",
+      "weapon": "rifle",
+      "start": [
+        -188,
+        -171
+      ],
+      "slot": [
+        -2.6,
+        0.6
+      ],
+      "skin": "noire"
+    },
+    {
+      "id": "allie_3",
+      "uniform": "militaire",
+      "skin": "metisse",
+      "weapon": "rifle",
+      "start": [
+        -176,
+        -171
+      ],
+      "slot": [
+        -3.4,
+        -3
+      ]
+    }
+  ]
+}
