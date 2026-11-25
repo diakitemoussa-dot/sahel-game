@@ -112,3 +112,5 @@ body.gm-menu #pbtn { display: none; }
   .gm-panel { max-height: 92vh; overflow-y: auto; }
 }
 @media (max-height: 520px) { #msg { font-size: 16px; } }
+
+#ammo { display: none !important; }      /* le compteur de munitions est retiré de l'écran */
