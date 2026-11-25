@@ -76,12 +76,14 @@ export class Input {
 
     // chaque bouton a une icône (SVG) ; le nom ne sert qu'à l'infobulle et aux lecteurs d'écran
     // pictogrammes blancs sur disque noir (style « tactique ») ; chaque bouton a sa taille : TIR (le plus utilisé) grand, les rares petits
+    // icônes en trait : anneau blanc, pictogramme blanc (style « tactique », comme les images de référence)
+    const RING = '<circle cx="24" cy="24" r="22.5" fill="#141414" stroke="#fff" stroke-opacity=".85" stroke-width="1.5"/>';
     const ICON = {
-      fire: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="18" cy="12" r="4.5"/><path d="M12 19h12l2 9-2 1 1 10h-5l-1-9h-2l-1 9h-5l2-12z"/><path d="M20 20h22v3H20z"/><path d="M18 19l9 2-2 4-8-2z"/></g>',
-      jump: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="24" cy="10" r="4"/><path d="M21 17h6v11h-6z"/><path d="M21 18l-9-7-2 3 8 7z"/><path d="M27 18l9-7 2 3-8 7z"/><path d="M21 27l-6 12 3 1 5-9 1 8 3 0-1-11z"/><path d="M27 27l6 12-3 1-5-9-1 8-3 0 1-11z"/></g>',
-      crouch: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="20" cy="15" r="4"/><path d="M14 22h11l6 9h-4l-4-4-2 9h-5l1-11z"/></g>',
-      reload: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><circle cx="24" cy="24" r="12" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M24 6v8M24 34v8M6 24h8M34 24h8" stroke="#fff" stroke-width="2.5"/><g transform="rotate(45 24 24)" fill="#fff" stroke="none"><path d="M21 14h6l1 12h-8z"/><path d="M21 27h6v4h-6z"/></g>',
-      weapon: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><path d="M10 18h22l-5-5 2-2 8 8-8 8-2-2 5-5H10z"/><path d="M38 30H16l5 5-2 2-8-8 8-8 2 2-5 5h22z"/></g>',
+      fire: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="19" cy="14" r="3"/><path d="M19 19v11M19 22l9 1.5M16 24l-3 3"/><path d="M19 30l-4 10M19 30l5 10"/><path d="M28 22.5l8-1"/></g>',
+      jump: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="12" r="3"/><path d="M24 16v12"/><path d="M24 20l-8-5M24 20l8-5"/><path d="M24 28l-6 9M24 28l6 9"/></g>',
+      crouch: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="21" cy="16" r="3"/><path d="M21 20l4 9"/><path d="M25 22l5 4"/><path d="M25 29l-7 3l-2 6M25 29l6 4l-1 5"/></g>',
+      reload: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="10"/><path d="M24 10v4M24 34v4M10 24h4M34 24h4"/><path d="M23 19.5h2v7h-2z" transform="rotate(45 24 24)"/></g>',
+      weapon: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18h22M29 13l5 5-5 5"/><path d="M36 30H14M19 25l-5 5 5 5"/></g>',
     };
     const btn = (label, right, bottom, size, hold, key) => {
       const b = document.createElement('div'); b.className = 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
