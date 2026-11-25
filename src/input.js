@@ -82,11 +82,10 @@ export class Input {
     const SYM = (inner) => `<g fill="none" stroke="#a8a8a8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
     const ICON = {
       // trois balles en diagonale (comme l'image d'origine)
-      fire: RING + `<g transform="translate(50 50) rotate(45)" fill="#a8a8a8"><path d="M-17 -6 L-12 -18 L-7 -6 V12 H-17Z"/><path d="M-5 -6 L0 -20 L5 -6 V14 H-5Z"/><path d="M7 -6 L12 -18 L17 -6 V12 H7Z"/></g>`,
+      fire: RING + `<g fill="none" stroke="#a8a8a8" stroke-width="6" stroke-linecap="round"><circle cx="50" cy="50" r="11"/><path d="M50 33 V38 M50 62 V67 M33 50 H38 M62 50 H67"/></g><circle cx="50" cy="50" r="2.5" fill="#a8a8a8"/>`,
       jump: RING + SYM('<path d="M50 66 V36 M40 46 L50 36 L60 46"/>'),
       crouch: RING + SYM('<path d="M50 34 V64 M40 54 L50 64 L60 54"/>'),
-      // balle dans un viseur (image de référence de la recharge) : pas de flèches, pour ne pas la confondre avec TIR
-      reload: `<g fill="none" stroke="#a8a8a8" stroke-width="5"><circle cx="50" cy="50" r="32"/></g><g fill="none" stroke="#a8a8a8" stroke-width="5" stroke-linecap="round"><path d="M50 14 V26 M50 74 V86 M14 50 H26 M74 50 H86"/></g><g transform="translate(50 50) rotate(45)" fill="#a8a8a8"><path d="M-6 -2 L0 -20 L6 -2 V14 H-6Z"/></g>`,
+      reload: RING + `<g transform="translate(50 50) rotate(45)" fill="#a8a8a8"><path d="M-17 -6 L-12 -18 L-7 -6 V12 H-17Z"/><path d="M-5 -6 L0 -20 L5 -6 V14 H-5Z"/><path d="M7 -6 L12 -18 L17 -6 V12 H7Z"/></g>`,
       weapon: RING + SYM('<path d="M38 44 H64 M57 37 L64 44 L57 51 M62 56 H36 M43 49 L36 56 L43 63"/>'),
     };
     const btn = (label, right, bottom, size, hold, key) => {
