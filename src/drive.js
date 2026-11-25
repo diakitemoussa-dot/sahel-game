@@ -16,6 +16,7 @@ import { ASSET_VERSION } from './version.js';
 const UP = new THREE.Vector3(0, 1, 0);
 const NEAR_R = 70;                  // rayon (m) du morceau de sable gardé autour du véhicule pour lire le vrai sol sous les roues
 const WALK_INPUT = { moveX: 0, moveY: 1, aim: false, fire: false, sprint: false };
+const ORBIT_SPEED = 1;                // vitesse de l'orbite : les commandes donnent déjà un angle par image
 
 export class DriveVehicle {
   /** def : { id, pos: [x, z], yaw } ; cfg : config/drive.json ; gltf : le modèle du blindé. */
@@ -42,7 +43,7 @@ export class DriveVehicle {
     this.t = 0; this.y = undefined; this.pitch = 0; this.roll = 0;
     this._ray = new THREE.Raycaster(); this._ray.firstHitOnly = true; this._from = new THREE.Vector3(); this._down = new THREE.Vector3(0, -1, 0);
     this._near = null; this._nearC = null;
-    this.camYawOff = 0; this.lookIdle = 0; this.camYaw = this.drv.heading;
+    this.camYawOff = 0; this.camElevOff = 0; this.lookIdle = 0; this.camYaw = this.drv.heading;
     this.v3 = new THREE.Vector3(); this.v3b = new THREE.Vector3();
     this._pose(true);
     this.flag = flags?.add(this.root, cfg.flag, () => [Math.sin(this.drv.heading) * this.drv.v, Math.cos(this.drv.heading) * this.drv.v]);      // drapeau du Mali sur l'antenne
@@ -172,7 +173,7 @@ export class DriveVehicle {
 
   _startDriving() {
     this.state = 'driving';
-    this.drv.v = 0; this.camYawOff = 0; this.lookIdle = 9; this.camYaw = this.drv.heading;
+    this.drv.v = 0; this.camYawOff = 0; this.camElevOff = 0; this.lookIdle = 9; this.camYaw = this.drv.heading;
     this.exitWarnAt = -9;
     this.hud?.toast?.('À vous de conduire', 2200);
   }
@@ -231,15 +232,18 @@ export class DriveVehicle {
   // ------------------------------------------------------------------ caméra
   /** Caméra de poursuite : derrière le véhicule, qui suit son cap ; la souris et le stick droit font tourner autour, puis la caméra revient d'elle-même. */
   _chase(dt, inp) {
+    // orbite : la souris (ou le stick droit, le doigt) fait tourner la caméra autour du véhicule, haut / bas règle l'angle de vue.
+    // La position reste là où le joueur l'a mise : elle ne revient plus toute seule derrière le véhicule.
     const c = this.cfg.cam ?? { dist: 13, h: 4.4, look: 2.0, fov: 62 };
-    const look = Math.abs(inp.lookX ?? 0) + Math.abs(inp.padLookX ?? 0);
-    if (look > 0.0004) { this.lookIdle = 0; this.camYawOff -= (inp.lookX ?? 0) + (inp.padLookX ?? 0); } else this.lookIdle += dt;
-    if (this.lookIdle > 1.6) this.camYawOff *= Math.exp(-dt * 1.8);
+    const dx = (inp.lookX ?? 0) + (inp.padLookX ?? 0), dy = (inp.lookY ?? 0) + (inp.padLookY ?? 0);
+    if (Math.abs(dx) + Math.abs(dy) > 0.0004) { this.lookIdle = 0; this.camYawOff -= dx * ORBIT_SPEED; this.camElevOff += dy * ORBIT_SPEED; } else this.lookIdle += dt;
     this.camYawOff = Math.max(-Math.PI, Math.min(Math.PI, this.camYawOff));
+    this.camElevOff = Math.max(-0.25, Math.min(0.9, this.camElevOff));                           // de presque à ras du sol jusqu'au-dessus
     this.camYaw = smoothAngle(this.camYaw, this.drv.heading, 1 - Math.exp(-dt * 2.6));
     const yaw = this.camYaw + this.camYawOff;
-    const c0 = this.pos;
-    const pos = new THREE.Vector3(c0.x - Math.sin(yaw) * c.dist, c0.y + c.h, c0.z - Math.cos(yaw) * c.dist);
+    const elev = Math.atan2(c.h, c.dist) + this.camElevOff;                                       // angle de vue : réglage de base + orbite
+    const d = c.dist, horiz = d * Math.cos(elev), c0 = this.pos;
+    const pos = new THREE.Vector3(c0.x - Math.sin(yaw) * horiz, c0.y + d * Math.sin(elev), c0.z - Math.cos(yaw) * horiz);
     pos.y = Math.max(pos.y, this.world.groundY(pos.x, pos.z) + 1.2);                             // jamais sous le sol
     const look3 = new THREE.Vector3(c0.x + Math.sin(this.drv.heading) * 3, c0.y + c.look, c0.z + Math.cos(this.drv.heading) * 3);
     return { pos, look: look3, fov: c.fov };
