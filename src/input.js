@@ -1,6 +1,6 @@
 // Une seule lecture par image : poll() renvoie l'état des commandes, quelle que soit la source.
 // Clavier : touches physiques (KeyW = Z sur AZERTY). Souris : verrouillage du pointeur au clic.
-import { PadHub, PadNav, padCommands } from './gamepad.js';
+import { PadHub, PadNav, padCommands, PAD } from './gamepad.js';
 
 export class Input {
   constructor(canvas, { gamepad = true } = {}) {
@@ -121,7 +121,8 @@ export class Input {
     let combo = p('KeyX');                                     // X : enchaîne toutes les animations de combat (Triangle sur la manette)
     let kick = p('KeyF');                                      // F : coups de pied seulement (pas de bouton séparé sur la manette)
     const sensDown = p('PageDown') || p('NumpadSubtract'), sensUp = p('PageUp') || p('NumpadAdd');   // sensibilité du viseur : PageDown moins, PageUp plus
-    let interact = p('KeyE');                                  // E : monter dans le blindé, l'arrêter, descendre
+    let interact = p('KeyE');                                  // E : monter dans un véhicule, en descendre
+    let driveBrake = k('Space'), padRT = 0, padLT = 0;         // conduite : frein à main (Espace, A), gâchettes de la manette
     let wardrobeToggle = p('KeyU');                            // U : menu des tenues (Select sur la manette)
     let menuLeft = p('ArrowLeft'), menuRight = p('ArrowRight');
     const menuOk = p('Enter'), menuBack = p('Escape');         // dans le menu seulement (le jeu ignore ses commandes quand il est ouvert)
@@ -144,6 +145,9 @@ export class Input {
       combo = combo || c.combo;                                // Triangle : tous les coups
       kick = kick || c.kick;
       reload = reload || c.reload;                             // Carré : recharge
+      interact = interact || c.interact;                       // R1 : monter dans un véhicule / en descendre
+      padRT = pad.buttons[PAD.RT]?.value ?? 0; padLT = pad.buttons[PAD.LT]?.value ?? 0;      // gâchettes : accélérer / freiner en conduisant
+      driveBrake = driveBrake || !!pad.buttons[PAD.A]?.pressed;                               // A tenu : frein à main
       wardrobeToggle = wardrobeToggle || c.wardrobe;           // Select
       menuLeft = menuLeft || c.menuLeft; menuRight = menuRight || c.menuRight;
     } else {
@@ -167,6 +171,6 @@ export class Input {
     this.pressed.clear();
     return { moveX: mx, moveY: my, lookX, lookY, padLookX, padLookY, fire, aim, sprint, sniperHold, jump, crouchToggle, toggleWeapon, weapon, viewToggle, sniperToggle,
              reload, melee, combo, kick, wave, victory, hit, deadToggle, downedToggle,
-             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, autoFire, ...this.override };
+             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, autoFire, driveBrake, padRT, padLT, ...this.override };
   }
 }

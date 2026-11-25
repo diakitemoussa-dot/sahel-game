@@ -170,6 +170,20 @@ const SCENARIOS = {
   // ciel : la caméra regarde vers le soleil (derrière le joueur, à droite) ; puis vers les nuages, vers l'horizon
   // convoi de blindés et lance-missiles en embuscade : le joueur se tient près de la piste, à l'ouest de la première embuscade
   convoi_vue: { frames: 60, expect: 'Rifle Aim', hostile: true, setup: (g) => { const x = -150, z = 100; g.player.pos.set(x, g.world.groundY(x, z), z); g.look(1.5, 0.12); } },
+  // conduite : le joueur est près d'un blindé garé, appuie sur « Entrer » ; les trois alliés montent (l'un au poste de tir sur le toit), puis il roule droit devant
+  conduite_entre: { frames: 1300, hostile: false,
+                    check: (g) => { const v = g.drive.activeVehicle; return !!v && v.driving && v.occ.length === 3 && v.occ.filter((o) => o.gunner).length === 1 && v.drv.v > 2; },
+                    setup: async (g) => {
+                      await g.spawnAllies();
+                      const v = g.drive.vehicles[0], d = v.door;
+                      g.player.pos.set(d.x - 2, g.world.groundY(d.x - 2, d.z - 3), d.z - 3);
+                      g.allies.forEach((a, i) => { const x = d.x + 1.5 * i, z = d.z - 6 - i; a.player.pos.set(x, g.world.groundY(x, z), z); });
+                    },
+                    phases: [{ until: 5, input: {} }, { until: 8, input: { interact: true } }, { until: 800, input: {} }, { until: 1300, input: { moveY: 1 } }] },
+  // le bouton « Entrer » s'affiche quand le joueur est près du blindé, et disparaît quand il s'en éloigne
+  conduite_bouton: { frames: 40, hostile: false,
+                     check: (g) => g.hud.promptEl.style.display === 'flex' && /Entrer/.test(g.hud.promptEl.textContent) && !!g.hud.promptEl.querySelector('svg'),
+                     setup: async (g) => { const v = g.drive.vehicles[0]; g.player.pos.set(v.pos.x - 5, g.world.groundY(v.pos.x - 5, v.pos.z), v.pos.z); } },
   ciel_soleil: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(-2.2, 0.5); } },
   ciel_nuages: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(0.5, 0.55); } },
   ciel_horizon: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(0, 0.12); } },

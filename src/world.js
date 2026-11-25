@@ -45,6 +45,7 @@ export function createWorldApi({ hm, colliders, cams, spawns, mesh = null, groun
     addCollision(geo, matrix) { if (!mesh) return null; mesh.add(geo, matrix); return mesh.lastAdd; },        // renvoie de quoi le retirer
     removeCollision(handle) { if (mesh) mesh.remove(handle); },
     addDynamic(box) { dynamic.push(box); return box; },
+    removeDynamic(box) { const i = dynamic.indexOf(box); if (i >= 0) dynamic.splice(i, 1); },
     /** premier point où le rayon touche le sol ou un objet, sinon le point à `max` mètres */
     rayGround(origin, dir, max = 120) {
       const p = new THREE.Vector3();

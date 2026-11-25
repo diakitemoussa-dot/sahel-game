@@ -35,7 +35,7 @@ export class PadFilter {
 }
 
 // Boutons de la disposition standard (Xbox / PlayStation) : A=Croix, B=Rond, Y=Triangle, L1=LB, L3=stick gauche enfoncé
-export const PAD = { A: 0, B: 1, SQUARE: 2, TRIANGLE: 3, LT: 6, RT: 7, L1: 4, L3: 10, SELECT: 8, R3: 11, TOUCHPAD: 17, DPAD_LEFT: 14, DPAD_RIGHT: 15 };
+export const PAD = { A: 0, B: 1, SQUARE: 2, TRIANGLE: 3, LT: 6, RT: 7, L1: 4, R1: 5, L3: 10, SELECT: 8, R3: 11, TOUCHPAD: 17, DPAD_LEFT: 14, DPAD_RIGHT: 15 };
 
 /** Traduit l'état filtré d'une manette en commandes de jeu.
  *  prev : boutons enfoncés à l'image précédente (tableau de booléens), pour détecter les nouveaux appuis. */
@@ -53,6 +53,7 @@ export function padCommands(pad, prev = []) {
     crouchToggle: edge(PAD.B),
     toggleWeapon: edge(PAD.L1),                                 // L1 : fusil, pistolet, mains nues, fusil...
     combo: edge(PAD.TRIANGLE),                                  // Triangle (Y sur une manette Xbox) : enchaîne TOUTES les animations de combat (poings, coudes, coups de pied)
+    interact: edge(PAD.R1),                                     // R1 : monter dans un véhicule / en descendre
     reload: edge(PAD.SQUARE),                                   // Carré (X sur une manette Xbox) : recharge l'arme
     kick: false,                                                // plus de bouton « coup de pied » séparé sur la manette (F au clavier)
     // menu des tenues : Select / Partager / Créer, ou R3 (stick droit enfoncé), ou le pavé tactile de la PlayStation

@@ -5,6 +5,14 @@ import { radarPoint } from './radar.js';
 const pts = (list) => list.map(([x, y]) => `${(100 + x).toFixed(2)},${(100 + y).toFixed(2)}`).join(' ');
 const ARC_POINTS = pts(crescent()), ARROW_POINTS = pts(arrowhead());
 
+import { DRIVE_HELP } from './drivelogic.js';
+
+const DRIVE_SEGMENTS = 24;           // segments de la jauge de vitesse
+const PROMPT_ICONS = {
+  enter: '<path d="M14 4h5v16h-5M3 12h11M10 8l4 4-4 4"/>',          // une flèche qui entre par la porte
+  exit: '<path d="M10 4H5v16h5M21 12H10M17 8l4 4-4 4"/>',           // une flèche qui sort par la porte
+};
+
 export class Hud {
   constructor() {
     this.el = document.getElementById('hud'); this.msg = document.getElementById('msg');
@@ -32,7 +40,38 @@ export class Hud {
     this._t = {};
   }
   /** Invite d'action au bas de l'écran (null : la cacher). */
-  setPrompt(text) { if (text !== this._prompt) { this._prompt = text; this.promptEl.textContent = text ?? ''; this.promptEl.style.display = text ? 'block' : 'none'; } }
+  /** opts (facultatif) : { icon: 'enter' | 'exit', keys: ['E', 'R1'] } : une icône et les touches (clavier, manette) à côté du texte. Cliquable : écrans tactiles. */
+  setPrompt(text, opts) {
+    const key = text ? `${text}|${opts?.icon ?? ''}|${(opts?.keys ?? []).join('/')}` : '';
+    if (key === this._prompt) return;
+    this._prompt = key;
+    if (!text) { this.promptEl.style.display = 'none'; return; }
+    const icon = opts?.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${PROMPT_ICONS[opts.icon] ?? ''}</svg>` : '';
+    const keys = (opts?.keys ?? []).map((k) => `<kbd>${k}</kbd>`).join('');
+    this.promptEl.innerHTML = `${icon}<span>${text}</span>${keys}`;
+    this.promptEl.style.display = 'flex';
+  }
+  /** Interface de conduite : info = { kmh, gear ('D' | 'R' | 'N'), frac (0 à 1) } ; null : la cacher (les commandes du joueur à pied reviennent). */
+  setDrive(info) {
+    if (!this.driveEl) {
+      const rows = (list) => list.map(([k, v]) => `<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
+      const segs = Array.from({ length: DRIVE_SEGMENTS }, (_, i) => `<i style="--c:hsl(${Math.round(52 - 52 * (i / (DRIVE_SEGMENTS - 1)))} 95% 55%)"></i>`).join('');
+      this.driveEl = document.createElement('div'); this.driveEl.id = 'drive';
+      this.driveEl.innerHTML = `<div class="dr-speed"><b>0</b><span>km/h</span><em>N</em></div><div class="dr-bar">${segs}</div>`
+        + `<div class="dr-help"><div class="dr-col"><h4>Clavier · souris</h4>${rows(DRIVE_HELP.pc)}</div><div class="dr-col"><h4>Manette</h4>${rows(DRIVE_HELP.pad)}</div></div>`;
+      document.body.appendChild(this.driveEl);
+      this._drSpeed = this.driveEl.querySelector('.dr-speed b'); this._drGear = this.driveEl.querySelector('.dr-speed em');
+      this._drSegs = [...this.driveEl.querySelectorAll('.dr-bar i')]; this._drKey = '';
+    }
+    document.body.classList.toggle('gm-drive', !!info);
+    this.driveEl.style.display = info ? 'block' : 'none';
+    if (!info) { this._drKey = ''; return; }
+    const kmh = Math.round(info.kmh), lit = Math.round(Math.min(1, info.frac) * DRIVE_SEGMENTS), key = `${kmh}|${info.gear}|${lit}`;
+    if (key === this._drKey) return;                                      // rien n'a changé : on ne touche pas au texte
+    this._drKey = key;
+    this._drSpeed.textContent = kmh; this._drGear.textContent = info.gear;
+    this._drSegs.forEach((s, i) => s.classList.toggle('on', i < lit));
+  }
   onPrompt(fn) { this._onPrompt = fn; }
   /** Panneau du convoi. info : voir Convoy.progress() ou null (pas de convoi : le panneau disparaît). */
   setConvoy(info) {
