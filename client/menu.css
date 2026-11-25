@@ -128,10 +128,7 @@ body.gm-menu #dock, body.gm-no-aide #dock { display: none !important; }
 /* en conduisant : la barre du bas, les boutons de combat et le panneau « Convoi » laissent la place à l'interface de conduite */
 body.gm-drive #dock, body.gm-drive .tbtn, body.gm-drive #cross { display: none !important; }
 body.gm-menu #drive, body.gm-no-aide #drive { display: none !important; }
-@media (max-width: 820px) { .dr-help { display: none; } }
 @media (max-width: 820px), (max-height: 560px) {
-  .dr-help { left: auto; right: 12px; bottom: auto; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 8px; padding: 8px 12px; font-size: 11px; }
-  .dr-col div { margin: 2px 0; } .dr-col kbd { min-width: 46px; }
   .dr-speed { bottom: 34px; } .dr-speed b { font-size: 34px; min-width: 54px; }
   .dr-bar i { width: 9px; height: 12px; }
   #prompt { bottom: 30%; font-size: 14px; } #prompt kbd { display: none; }

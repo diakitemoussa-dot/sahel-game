@@ -49,17 +49,18 @@ test('le frein à main l\'arrête vite et ne le fait pas reculer', () => {
   assert.equal(d.v, 0); assert.ok(min >= 0);
 });
 
-test('tourner à droite augmente le cap, à gauche le diminue ; à l\'arrêt il ne pivote pas', () => {
+test('tourner à droite diminue le cap (il part vers sa droite), à gauche l’augmente ; à l\'arrêt il ne pivote pas', () => {
   const r = new Driving(); r.v = 8; run(r, 1.5, { steer: 1 });
   const l = new Driving(); l.v = 8; run(l, 1.5, { steer: -1 });
-  assert.ok(r.heading > 0.2 && l.heading < -0.2);
+  assert.ok(r.heading < -0.2 && l.heading > 0.2);
+  assert.ok(Math.sin(r.heading) < 0, 'cap 0 = vers +z ; sa droite est du côté -x');
   const s = new Driving(); run(s, 2, { steer: 1 });
   assert.equal(s.heading, 0);
 });
 
 test('en marche arrière, le braquage s\'inverse', () => {
   const d = new Driving(); d.v = -3; run(d, 1, { steer: 1, brake: 1 });
-  assert.ok(d.heading < 0);
+  assert.ok(d.heading > 0);
 });
 
 test('le volant tourne progressivement', () => {

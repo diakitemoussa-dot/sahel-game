@@ -1,5 +1,5 @@
 // Conduite d'un véhicule par le joueur (logique pure, testée sans navigateur) : accélérer, freiner, reculer, tourner.
-// Repère : cap en radians autour de Y ; l'avant est (sin cap, cos cap), la droite est (cos cap, -sin cap) ; tourner à droite augmente le cap.
+// Repère : cap en radians autour de Y ; l'avant est (sin cap, cos cap) et la droite du véhicule est (-cos cap, sin cap) (three.js : en regardant vers +z, la droite est du côté -x) ; tourner à droite DIMINUE le cap.
 
 /** Réglages d'un blindé lourd : vitesse en m/s, accélérations en m/s². */
 export const DRIVE_DEFAULTS = { maxSpeed: 17, reverseMax: 5, accel: 5, brake: 11, handbrake: 16, coast: 1.6, wheelbase: 4.6, maxSteer: 0.55, steerRate: 2.4 };
@@ -52,7 +52,7 @@ export class Driving {
     // braquage : plus il va vite, moins les roues peuvent tourner ; à l'arrêt il ne pivote pas sur place
     const lock = this.maxSteer / (1 + Math.abs(this.v) / 9);
     const turn = (this.v / this.wheelbase) * Math.tan(this.steer * lock);
-    this.heading += turn * dt;
+    this.heading -= turn * dt;                                  // volant à droite (steer > 0) : le cap diminue
     this.x += Math.sin(this.heading) * this.v * dt;
     this.z += Math.cos(this.heading) * this.v * dt;
     return this.v;
