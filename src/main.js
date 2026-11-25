@@ -74,7 +74,7 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 250 });
 scene.add(sun, sun.target);
 
-const PLAYER_ANIM_BOOST = 1.25;                                      // +25 % sur toutes les animations du joueur (et ses déplacements, pour que les pas collent au sol)
+const PLAYER_ANIM_BOOST = 1.6;                                       // +60 % sur les déplacements et les actions du joueur (et ses pas, pour qu'ils collent au sol)
 const input = new Input(canvas, { gamepad: !new URLSearchParams(location.search).has('autotest') });
 const tracers = [];
 

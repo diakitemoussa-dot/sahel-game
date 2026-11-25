@@ -59,9 +59,9 @@ export function fadeTime(from, to) {
 // Avec ces vitesses, chaque coup dure entre 0,8 et 1,4 s. Les autres animations restent à vitesse normale.
 const SPEED = {
   'Melee Punch': 1.6, 'Punch': 1.6,
-  'Cross Punch': 2.0, 'Elbow Punch': 2.0, 'Kick': 2.0, 'Side Kick': 2.0,
-  'Pistol Whip': 2.2,
-  'Rifle Reload': 1.6, 'Pistol Reload': 1.9,       // recharge : 4,2 s à vitesse normale, trop long en plein combat (2,6 s et 2,2 s)
+  'Cross Punch': 2.6, 'Elbow Punch': 2.6, 'Kick': 2.5, 'Side Kick': 2.5,
+  'Pistol Whip': 2.8,
+  'Rifle Reload': 2.4, 'Pistol Reload': 2.8,       // recharge : 4,2 s à vitesse normale, trop long en plein combat (1,75 s et 1,5 s)
 };
 
 /** Vitesse supplémentaire du joueur (Player.animBoost) : seulement pour les déplacements et les actions. Les animations d'arrêt et de visée (respiration, balancement) restent à leur vitesse : accélérées, elles font trembler le personnage. */
