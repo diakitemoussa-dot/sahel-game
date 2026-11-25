@@ -10,6 +10,7 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { Driving, driveCommands } from './drivelogic.js';
 import { rideOnSurface, smoothAngle } from './vehicle.js';
 import { corridorMesh } from './road.js';
+import { tuneVehicle } from './vehiclefx.js';
 import { ASSET_VERSION } from './version.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -22,6 +23,7 @@ export class DriveVehicle {
     Object.assign(this, { def, cfg, world, player, getAllies, hud, skirmish });
     this.root = clone(gltf.scene);
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    tuneVehicle(this.root);                                        // peinture un peu métallisée, reflet de ciel
     scene.add(this.root);
     this.wheels = ['Roue_AVG', 'Roue_AVD', 'Roue_ARG', 'Roue_ARD'].map((n) => this.root.getObjectByName(n));
     this.base = this.wheels.map((w) => w?.position.y ?? 0); this.susp = this.wheels.map(() => 0); this.wheelAngle = 0;

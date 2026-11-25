@@ -9,6 +9,7 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { decodeSCOL } from './meshworld.js';
 import { buildPath, pathAt, rideOnSurface, vehiclePose, smoothAngle } from './vehicle.js';
 import { corridorMesh } from './road.js';
+import { tuneVehicle } from './vehiclefx.js';
 import { ASSET_VERSION } from './version.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -110,6 +111,7 @@ export class Convoy {
     this.items = this.logic.vehicles.map((v) => {
       const root = clone(gltf.scene);
       root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = o.material.clone(); } });
+      tuneVehicle(root);                                                     // peinture un peu métallisée, reflet de ciel
       scene.add(root);
       const box = { t: 'b', x: 0, y: 0, hx: cfg.box?.[0] ?? 2.1, hy: cfg.box?.[1] ?? 5.0, yaw: 0 };                  // collision mobile (voir world.addDynamic)
       world.addDynamic?.(box);

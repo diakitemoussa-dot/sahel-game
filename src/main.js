@@ -18,6 +18,7 @@ import { loadProps } from './props.js';
 import { loadRoads } from './road.js';
 import { loadConvoys } from './boarding.js';
 import { loadDrive } from './drive.js';
+import { setVehicleEnv, makeSkyEnv } from './vehiclefx.js';
 import { loadConvoy } from './convoy.js';
 import { lookScale, stepUser, loadUser, saveUser } from './sensitivity.js';
 import { GameMenu } from './menu.js';
@@ -49,6 +50,7 @@ const profileFor = (o) => (isTestRun && !urlPerf ? 'desktop' : resolveProfile(o.
 let perfName = profileFor(loadOptions(isTestRun ? null : localStorage));
 let perf = settingsFor(perfName);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: perf.antialias, powerPreference: perf.powerPreference });      // l'anti-aliasing se choisit à la création : il change au prochain lancement
+try { setVehicleEnv(makeSkyEnv(renderer)); } catch (e) { console.warn('reflet de ciel des véhicules indisponible', e); }      // les véhicules reflètent un peu le ciel (vehiclefx.js)
 renderer.setPixelRatio(Math.min(devicePixelRatio, perf.maxPixelRatio));
 renderer.shadowMap.enabled = true;
 // même tonalité que Blender (AgX) : sans elle le sable sort saturé et orange, et le relief s'écrase
