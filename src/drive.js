@@ -19,7 +19,7 @@ const WALK_INPUT = { moveX: 0, moveY: 1, aim: false, fire: false, sprint: false 
 
 export class DriveVehicle {
   /** def : { id, pos: [x, z], yaw } ; cfg : config/drive.json ; gltf : le modèle du blindé. */
-  constructor({ def, cfg, gltf = null, root = null, prop = null, scene, world, player, getAllies, hud, skirmish }) {
+  constructor({ def, cfg, gltf = null, root = null, prop = null, scene, world, player, getAllies, hud, skirmish, flags = null }) {
     Object.assign(this, { def, cfg, world, player, getAllies, hud, skirmish });
     if (root) {                                                    // un décor déjà posé dans le monde (props.json) : on le conduit tel quel
       this.root = root;
@@ -45,6 +45,7 @@ export class DriveVehicle {
     this.camYawOff = 0; this.lookIdle = 0; this.camYaw = this.drv.heading;
     this.v3 = new THREE.Vector3(); this.v3b = new THREE.Vector3();
     this._pose(true);
+    this.flag = flags?.add(this.root, cfg.flag, () => [Math.sin(this.drv.heading) * this.drv.v, Math.cos(this.drv.heading) * this.drv.v]);      // drapeau du Mali sur l'antenne
   }
 
   get driving() { return this.state === 'driving'; }
@@ -324,7 +325,7 @@ export class DriveSystem {
 }
 
 /** Charge config/drive.json et le modèle du blindé. Renvoie null si le fichier manque (le jeu démarre quand même). */
-export async function loadDrive({ scene, world, player, getAllies, hud, skirmish, props = [] }) {
+export async function loadDrive({ scene, world, player, getAllies, hud, skirmish, props = [], flags = null }) {
   const r = await fetch(`config/drive.json?v=${ASSET_VERSION}`);
   if (!r.ok) return null;
   const cfg = await r.json();
@@ -332,7 +333,7 @@ export async function loadDrive({ scene, world, player, getAllies, hud, skirmish
   const vehicles = [];
   for (const def of cfg.vehicles) {
     const c = { ...cfg, ...def };                                      // les réglages propres au véhicule remplacent ceux par défaut
-    const base = { def, cfg: c, scene, world, player, getAllies, hud, skirmish };
+    const base = { def, cfg: c, scene, world, player, getAllies, hud, skirmish, flags };
     if (def.prop) {                                                    // un décor de props.json : on conduit le modèle déjà posé
       const prop = props.find((p) => p.def.id === def.prop);
       if (!prop) { console.warn(`véhicule à conduire : décor ${def.prop} introuvable`); continue; }
