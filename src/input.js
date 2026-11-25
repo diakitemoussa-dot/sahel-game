@@ -74,23 +74,30 @@ export class Input {
     const endLook = (e) => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
     addEventListener('touchend', endLook); addEventListener('touchcancel', endLook);
 
+    // chaque bouton a une icône (SVG) ; le nom ne sert qu'à l'infobulle et aux lecteurs d'écran
+    const ICON = {
+      fire: '<path d="M12 3 L16 10 V19 H8 V10 Z"/><path d="M8 14 H16"/>',                                   // balle
+      aim: '<circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1"/>',   // visée
+      jump: '<path d="M12 19V5M6 11l6-6 6 6"/>',                                                          // sauter
+      crouch: '<path d="M12 5v14M6 13l6 6 6-6"/>',                                                        // s'accroupir
+      reload: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/>',                               // recharger
+      weapon: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',                                                     // changer d'arme
+    };
     const btn = (label, right, bottom, hold, key) => {
-      const b = document.createElement('div'); b.className = 'tbtn'; b.textContent = label;
+      const b = document.createElement('div'); b.className = 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
+      b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[key]}</svg>`;
       b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; document.body.appendChild(b);
       b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
       b.addEventListener('mousedown', (e) => { this.t[key] = true; e.preventDefault(); e.stopPropagation(); });
       if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); addEventListener('mouseup', up); }
     };
-    // boutons à droite (le stick de déplacement reste à gauche) : 3 rangées de 3
+    // boutons à droite (le stick de déplacement reste à gauche) : les commandes essentielles seulement
     btn('TIR', 16, 16, true, 'fire');
     btn('VISER', 84, 16, true, 'aim');
     btn('SAUT', 152, 16, false, 'jump');
     btn('ARME', 16, 84, false, 'weapon');
-    btn('ACCR.', 84, 84, false, 'crouch');
-    btn('RECH.', 152, 84, false, 'reload');
-    btn('COURIR', 16, 152, true, 'sprint');
-    btn('MÊLÉE', 84, 152, false, 'melee');
-    btn('TENUE', 152, 152, false, 'wardrobe');
+    btn('ACCROUPIR', 84, 84, false, 'crouch');
+    btn('RECHARGER', 152, 84, false, 'reload');
   }
 
   poll() {
@@ -146,8 +153,6 @@ export class Input {
       if (this.t.weapon) { toggleWeapon = true; this.t.weapon = false; }
       if (this.t.wardrobe) { wardrobeToggle = true; this.t.wardrobe = false; }
       if (this.t.reload) { reload = true; this.t.reload = false; }
-      if (this.t.melee) { melee = true; this.t.melee = false; }
-      sprint = sprint || this.t.sprint;
     }
     const n = Math.hypot(mx, my);
     if (n > 1) { mx /= n; my /= n; }

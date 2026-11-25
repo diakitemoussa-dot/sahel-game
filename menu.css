@@ -115,3 +115,4 @@ body.gm-menu #pbtn { display: none; }
 @media (max-height: 520px) { #msg { font-size: 16px; } }
 
 #ammo { display: none !important; }      /* le compteur de munitions est retiré de l'écran */
+.tbtn svg { width: 56%; height: 56%; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px #000); }
