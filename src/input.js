@@ -86,8 +86,9 @@ export class Input {
       weapon: RING + '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18h22M29 13l5 5-5 5"/><path d="M36 30H14M19 25l-5 5 5 5"/></g>',
     };
     const btn = (label, right, bottom, size, hold, key) => {
-      const b = document.createElement('div'); b.className = 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
-      b.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[key]}</svg>`;
+      const b = document.createElement('div'); b.className = key === 'fire' ? 'tbtn tir' : 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
+      // TIR : l'image d'origine (assets/icons/tir.png) ; les autres boutons : pictogrammes dessinés
+      b.innerHTML = key === 'fire' ? '<img src="assets/icons/tir.png" alt="" draggable="false">' : `<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[key]}</svg>`;
       b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; b.style.width = b.style.height = size + 'px';
       document.body.appendChild(b);
       b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
