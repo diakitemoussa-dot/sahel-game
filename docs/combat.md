@@ -83,3 +83,14 @@ indique la direction. Les miliciens morts disparaissent. Raccourci pour aller vo
 - Toutes les animations hors combat sont jouées 20 % plus vite (`ANIM_SPEED` dans `src/animstate.js`) ; les vitesses de déplacement montent de 20 % aussi (`SPEED` dans `src/player.js` : marche 2,4, course 5,5, sprint 7,0, accroupi 2,0 m/s) pour que les pas collent au sol. Fondus : 0,3 s autour de l'arrêt et de la visée, 0,1 s entre deux déplacements ; la visée et le demi-tour du corps sont plus vifs.
   Les animations de combat gardent leur propre vitesse : le moment d'impact des coups en dépend (`MELEE_DELAY`, `combat.js`).
 - Un allié court dès 3,5 m d'écart avec sa place et sprinte dès 8 m (`Follower`). Coincé contre un obstacle (moins de 35 cm en 0,7 s), il saute (double saut : il peut grimper) et contourne d'un côté, puis de l'autre.
+
+## Esprit des PNJ : caractère, moral, décisions, équipe
+
+Tous les PNJ (miliciens et alliés) ont un **esprit** (`client/src/npcmind.js`, `squad.js`) par-dessus le cerveau de combat (`npcbrain.js`). Tests : `tests/npcmind.test.mjs`.
+- **Caractère** : courage, agressivité, prudence, esprit d'équipe, tirés au hasard (même graine = même caractère). Deux PNJ face à la même scène ne font pas le même choix ; un peureux reste caché plus longtemps, un brave ressort plus vite.
+- **Moral** : il baisse quand le PNJ est touché, qu'une balle le frôle, qu'un camarade tombe près de lui, ou qu'il est en infériorité ; il remonte à l'abri, au calme, entouré, ou en abattant un adversaire. Les blessures l'entament aussi.
+- **Délibération** : toutes les ~0,5 s il pèse ses options et garde son choix au moins 1,5 s (pas d'hésitation d'image en image) : `advance` (foncer en gagnant du terrain), `suppress` (couvrir par le tir), `flank` (contourner par un côté), `fallback` (se replier vers un abri plus loin et y attendre), `flee` (panique : il court sans tirer), `hold` (attendre caché). La panique l'emporte sur tout.
+- **Équipe** : les PNJ d'un camp qui combattent le même adversaire (à moins de 45 m) se répartissent les rôles : le plus proche et le plus brave couvre, les autres contournent chacun d'un côté (tenaille). Le point de contournement est un point libre, atteignable, d'où l'on voit l'adversaire (`skirmish._findFlank`).
+- **Radio** : le PNJ qui repère l'adversaire prévient ses camarades à moins de 70 m (après un court délai, à quelques mètres près) ; ils viennent vers la zone. Un camarade abattu fait baisser le moral des voisins.
+- **Mémoire** : il retient où il a vu l'adversaire en dernier, sa vitesse et sa direction, et le cherche plus loin sur son chemin (jusqu'à 4 s de course) ; un prudent s'approche en marchant quand il ne voit rien.
+- **Pensées** : ce que le PNJ « pense » (« Je le contourne par la gauche », « Contact ! », « Je ne peux pas tenir ! ») s'affiche au-dessus de sa tête à moins de 45 m, quelques secondes après chaque décision (`brain.thought`).

@@ -15,10 +15,14 @@ import { DustSystem } from './dust.js';
 import { MuzzleFlash } from './muzzle.js';
 import { BloodFx } from './blood.js';
 import { loadProps } from './props.js';
+import { loadRoads } from './road.js';
+import { loadConvoys } from './boarding.js';
+import { loadConvoy } from './convoy.js';
 import { lookScale, stepUser, loadUser, saveUser } from './sensitivity.js';
 import { GameMenu } from './menu.js';
 import { pixelRatioFor, volumeOf, AwayGuard, loadOptions } from './menustate.js';
 import { resolveProfile, settingsFor } from './perfprofile.js';
+import { PerfGovernor, QUALITY_LEVELS } from './perfgovernor.js';
 import { Sfx } from './sfx.js';
 import { Ammo } from './ammo.js';
 import { SmokeSystem } from './smoke.js';
@@ -34,6 +38,7 @@ const NEUTRAL = { moveX: 0, moveY: 0, lookX: 0, lookY: 0, padLookX: 0, padLookY:
   combo: false, kick: false, wave: false, victory: false, hit: false, deadToggle: false, downedToggle: false };
 
 const canvas = document.getElementById('c');
+const _cinCam = new THREE.PerspectiveCamera();                    // sert à calculer l'orientation de la caméra de cinéma (boarding.js)
 const hud = new Hud();
 // profil de performance : ordinateur, téléphone ou téléphone modeste (voir perfprofile.js). ?perf=eco|max|auto pour l'essayer à la main.
 const isTestRun = new URLSearchParams(location.search).has('autotest');
@@ -117,43 +122,50 @@ const menu = new GameMenu({ testing: testingMode, storage: testingMode ? null : 
 sfx.setVolume(volumeOf(menu.startupOptions()));
 
 /** Applique le profil de performance : résolution, ombres, fumée, plafond d'images par seconde (tout sauf l'anti-aliasing, qui se règle à la création). */
+// qualité adaptative : si l'ordinateur ne tient pas environ 50 images par seconde, la résolution et les ombres baissent par paliers (perfgovernor.js) ; le choix « Maximum » des options la désactive
+const governor = new PerfGovernor();
+let qLevel = 0, adaptive = true;
 function applyPerf(o = menu.startupOptions()) {
   perfName = profileFor(o); perf = settingsFor(perfName);
-  renderer.setPixelRatio(pixelRatioFor(o, devicePixelRatio, perf.maxPixelRatio));
+  adaptive = !isTestRun && o.perf !== 'max';
+  if (!adaptive) qLevel = 0;
+  const q = QUALITY_LEVELS[qLevel];
+  renderer.setPixelRatio(Math.max(0.5, pixelRatioFor(o, devicePixelRatio, perf.maxPixelRatio) * q.scale));
   resize();
-  sun.castShadow = perf.shadowMap > 0;
-  if (perf.shadowMap > 0) {
+  const shadowSize = Math.round((perf.shadowMap * q.shadow) / 256) * 256;
+  sun.castShadow = shadowSize > 0;
+  if (shadowSize > 0) {
     const sh = sun.shadow, e = perf.shadowExtent;
-    if (sh.mapSize.x !== perf.shadowMap) { sh.mapSize.set(perf.shadowMap, perf.shadowMap); sh.map?.dispose(); sh.map = null; }
+    if (sh.mapSize.x !== shadowSize) { sh.mapSize.set(shadowSize, shadowSize); sh.map?.dispose(); sh.map = null; }
     Object.assign(sh.camera, { left: -e, right: e, top: e, bottom: -e }); sh.camera.updateProjectionMatrix();
   }
   G.smoke?.setDetail(perf.smoke);
   G.fpsCap = perf.fpsCap;
   G.war?.setLevel(perf.war ?? 1);
-  if (window.__game) window.__game.perf = { name: perf.name, ...perf };
+  if (window.__game) window.__game.perf = { name: perf.name, ...perf, quality: q.name, qualityLevel: qLevel };
 }
 applyPerf();
 { const pb = document.getElementById('pbtn');
   if (testingMode) pb.style.display = 'none';
-  else pb.addEventListener('click', (e) => { e.stopPropagation(); if (menu.pause()) menu.hooks.onPause?.(); }); }
+  else pb.addEventListener('click', (e) => { e.stopPropagation(); if (menu.pause('Bouton pause')) menu.hooks.onPause?.(); }); }
 // le joueur quitte la fenêtre : pause et silence ; il revient : le jeu et le son repartent tout seuls
 const away = new AwayGuard();
 const isAway = () => document.hidden || !document.hasFocus();
 function onAway() {
   sfx.suspend(); menu.suspendMedia();
-  if (!testingMode && away.leave(menu.state) === 'pause' && menu.pause()) menu.hooks.onPause?.();     // (test automatique : jamais de pause)
+  if (!testingMode && away.leave(menu.state) === 'pause' && menu.pause(document.hidden ? 'Onglet masqué : le jeu reprend à votre retour' : 'Fenêtre quittée : le jeu reprend à votre retour')) menu.hooks.onPause?.();     // (test automatique : jamais de pause)
 }
 function onBack() {
   sfx.resume(); menu.resumeMedia();
   if (away.returned(menu.state) === 'resume') { menu.resumeGame(); menu.hooks.onResume?.(); }
 }
 document.addEventListener('visibilitychange', () => (document.hidden ? onAway() : onBack()));
-addEventListener('blur', onAway);
+addEventListener('blur', () => setTimeout(() => { if (isAway()) onAway(); }, 150));       // un « blur » passager (le focus passe à un cadre ou un outil) ne met pas le jeu en pause : on vérifie que la fenêtre est bien quittée
 addEventListener('focus', onBack);
 // la souris libérée en jeu (Échap du navigateur) = pause
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement === canvas) G.locked = true;
-  else if (G.locked) { G.locked = false; if (menu.state === 'playing' && !G.wardrobe?.open && menu.pause()) { menu.hooks.onPause?.(); if (isAway()) away.lockLostWhileAway(); } }
+  else if (G.locked) { G.locked = false; if (menu.state === 'playing' && !G.wardrobe?.open && menu.pause('Souris libérée par le navigateur : cliquez sur Reprendre')) { menu.hooks.onPause?.(); if (isAway()) away.lockLostWhileAway(); } }
 });
 
 async function start() {
@@ -161,6 +173,7 @@ async function start() {
   worldRef = world;
   let props = [];
   try { props = await loadProps(scene, world); } catch (e) { console.error('décors non chargés', e); }      // véhicules et autres objets posés dans le monde
+  try { await loadRoads(scene, world); } catch (e) { console.error('pistes non chargées', e); }      // longue piste de terre battue (config/road.json)
   const blood = new BloodFx(scene, world, camera, { enabled: new URLSearchParams(location.search).get('sang') !== '0' });   // ?sang=0 : sans sang
   blood.renderer = renderer;
   addEventListener('resize', () => blood._resize());
@@ -173,19 +186,19 @@ async function start() {
   // fumées de champ de bataille : foyers (config/smoke.json), véhicules en feu (config/props.json) et missiles qui tombent de temps en temps
   const scenario = new URLSearchParams(location.search).get('autotest') ?? '';
   const isTest = new URLSearchParams(location.search).has('autotest');
-  const smoke = new SmokeSystem(scene, world, camera, { enabled: !isTest || /fumee/.test(scenario), strikes: false });      // pas de missile au hasard : les frappes partent des avions de chasse (aircraft.js)
+  const smoke = new SmokeSystem(scene, world, camera, { enabled: !isTest || /(fumee|^convoi_)/.test(scenario), strikes: false });      // pas de missile au hasard : les frappes partent des avions de chasse (aircraft.js)
   try {
     const sj = await (await fetch(`config/smoke.json?v=${ASSET_VERSION}`)).json();
     for (const s of sj.sites ?? []) smoke.addSite({ id: s.id, x: s.pos[0], z: -s.pos[1], kind: s.kind, scale: s.scale ?? 1, intensity: s.start ?? 1, target: s.start ?? 1 });
   } catch (e) { console.error('fumées : config/smoke.json non chargé', e); }
   for (const pr of props) if (pr.def.smoke) smoke.addSite({ id: pr.def.id, x: pr.def.pos[0], z: -pr.def.pos[1], y: pr.root.position.y, kind: pr.def.smoke.kind ?? 'car', scale: pr.def.smoke.scale ?? 1, intensity: pr.def.smoke.start ?? 1, target: pr.def.smoke.start ?? 1 });
-  smoke.onExplosion = (pos, s) => { sfx.play('explosion', { pos, vol: Math.min(1, 0.85 * s), ear: { ref: 25, max: 700 } }); window.__game?.skirmish?.blast(pos, s); };      // on l'entend de loin ; le souffle blesse
+  smoke.onExplosion = (pos, s) => { sfx.play('explosion', { pos, vol: Math.min(1, 0.85 * s), ear: { ref: 25, max: 700 } }); window.__game?.skirmish?.blast(pos, s); window.__game?.convoy?.blast(pos); };      // on l'entend de loin ; le souffle blesse
   smoke.onMissile = (pos) => sfx.play('missile', { pos, vol: 0.9, ear: { ref: 25, max: 600 } });
   smoke.onCrackle = (pos) => sfx.play('crackle', { pos, vol: 0.7 });
   G.smoke = smoke; smoke.setDetail(perf.smoke);
   smoke.prewarm(16);                                                 // au démarrage les colonnes sont déjà hautes
   // hélicoptères qui tournent au-dessus de la carte, avions de chasse qui traversent le ciel de temps en temps
-  const air = new AirTraffic(scene, camera, world, { sfx, smoke, enabled: !isTest || /(avion|helico)/.test(scenario), passes: !isTest });
+  const air = new AirTraffic(scene, camera, world, { sfx, smoke, enabled: !isTest || /(avion|helico|^convoi_)/.test(scenario), passes: !isTest });
   // la guerre en fond : combats lointains, explosions, obus, rafales d'hélicoptère (muette et sans effet en test automatique, sauf scénarios « guerre »)
   const war = new War({ world, smoke, air, sfx, tracer: addTracer, muzzle, enabled: !isTest || /guerre/.test(scenario), level: perf.war ?? 1 });
   G.war = war;
@@ -210,7 +223,7 @@ async function start() {
   let npcs = [], allies = [];
   const npcDefs = await loadNpcDefs().catch(() => ({ npcs: [], allies: [] }));
   // miliciens : tous en jeu normal ; en test automatique seulement ceux du camp de départ (les autres : scénarios « monde_* »), pour garder les tests rapides
-  const wantFar = !testing || /^monde_/.test(new URLSearchParams(location.search).get('autotest') ?? '');
+  const wantFar = !testing || /^(monde_|convoi_)/.test(new URLSearchParams(location.search).get('autotest') ?? '');
   try { npcs = await loadNpcs(scene, world, lib, npcDefs.npcs.filter((d) => wantFar || !d.far), 'enemy'); } catch (e) { console.error('PNJ non chargés', e); }
   // alliés du joueur : en jeu normal ils sont là dès le départ ; en test automatique, un scénario les fait venir avec spawnAllies()
   try { if (!testing) allies = await loadNpcs(scene, world, lib, npcDefs.allies, 'ally'); } catch (e) { console.error('alliés non chargés', e); }
@@ -229,10 +242,16 @@ async function start() {
   skirmish.onHurt = (dmg) => { smoke.shake = Math.max(smoke.shake, Math.min(0.6, 0.15 + dmg / 25)); };      // le joueur touché : la caméra tremble
   skirmish.hostile = false;                                  // derrière le menu les PNJ ne tirent pas ; JOUER les rend hostiles (en test automatique : jamais, sauf scénarios de combat)
   G.wardrobe = wardrobe;
+  air.targetPicker = () => skirmish.airTarget();                              // les tirs aériens se rabattent sur les miliciens
+  skirmish.onLaunch = (pos) => air.callSupport(pos);                           // et sur un lance-missiles qui vient de tirer sur le convoi
+  let convoy = null, roadPts = [], convoyBroken = false;                                                          // convoi de blindés qui roulent doucement ; des miliciens lance-missiles les visent (convoy.js, skirmish.js)
+  if (!testing || /^convoi_/.test(scenario)) { try { convoy = await loadConvoy({ scene, world, smoke, hud }); if (convoy) { skirmish.convoy = convoy; roadPts = convoy.path.pts.filter((_, i) => i % 8 === 0).map((p) => ({ x: p[0], z: -p[1] })); } } catch (e) { console.error('convoi non chargé', e); } }
+  const convoys = await loadConvoys(props, { player, getAllies: () => allies, world, hud, skirmish }).catch((e) => { console.error('blindés non chargés', e); return []; });
+  wardrobe.addTeam(allies.map((a) => a.outfit).filter(Boolean));            // les alliés portent la tenue choisie par le joueur (et la changent avec lui)
   hud.hideMessage();
   menu.setLoaded();
-  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, sky, dust, hud, muzzle, blood, props, allies,
-    spawnAllies: async () => { const a = await loadNpcs(scene, world, lib, npcDefs.allies, 'ally'); a.forEach((x) => { skirmish.addAlly(x); allies.push(x); }); return a; }, getYaw: () => yaw, look: (y, p) => { yaw = y; pitch = p; }, menu };     // accès pour les tests automatiques
+  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, convoys, convoy, governor, sky, dust, hud, muzzle, blood, props, allies,
+    spawnAllies: async () => { const a = await loadNpcs(scene, world, lib, npcDefs.allies, 'ally'); a.forEach((x) => { skirmish.addAlly(x); allies.push(x); }); await wardrobe.addTeam(a.map((x) => x.outfit).filter(Boolean)); return a; }, getYaw: () => yaw, look: (y, p) => { yaw = y; pitch = p; }, menu };     // accès pour les tests automatiques
   const auto = makeAutotest(new URLSearchParams(location.search).get('autotest'));
 
   // derrière le menu : le héros debout, la caméra qui tourne doucement autour, les PNJ vivants mais pas hostiles
@@ -321,14 +340,29 @@ async function start() {
   }
 
   let lastDraw = 0;
+  // Une erreur dans une image ne doit jamais figer le jeu : sans cela, la boucle s'arrête et l'écran reste bloqué. On note l'erreur, on libère le blindé s'il est en cause, et on continue.
+  let frameErrors = 0;
   function frame(now) {
+    try { frameBody(now); }
+    catch (e) {
+      if (frameErrors++ < 5) console.error('erreur dans la boucle du jeu (le jeu continue) :', e);
+      if (frameErrors === 1) hud.toast('Un problème est survenu : le jeu continue', 3500);
+      for (const c of convoys) c.abort?.(e);
+      requestAnimationFrame(frame);
+    }
+  }
+  function frameBody(now) {
     if (G.fpsCap && now - lastDraw < 1000 / G.fpsCap - 3) { requestAnimationFrame(frame); return; }        // plafond d'images par seconde (téléphone : 30)
     lastDraw = now;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const rawDt = (now - last) / 1000, dt = Math.min(0.05, rawDt); last = now;
+    if (adaptive && !menu.flow.active) {                                       // fluidité : le jeu s'adapte à l'ordinateur
+      const lv = governor.push(rawDt);
+      if (lv !== null) { const lower = lv > qLevel; qLevel = lv; applyPerf(); hud.toast(lower ? 'Qualité réduite pour rester fluide' : 'Qualité remontée', 2200); }
+    }
     sfx.setAmbient(menu.state !== 'intro' && menu.state !== 'splash');         // vent du désert, sauf pendant la vidéo (qui a sa propre bande son)
     if (menu.flow.active) { menuFrame(dt, now); requestAnimationFrame(frame); return; }
     const raw = input.poll();
-    if (raw.nav?.start && !wardrobe.open && menu.pause()) menu.hooks.onPause?.();          // Start de la manette : pause
+    if (raw.nav?.start && !wardrobe.open && menu.pause('Bouton Start de la manette')) menu.hooks.onPause?.();          // Start de la manette : pause
     if (menu.flow.active) { renderer.render(scene, camera); requestAnimationFrame(frame); return; }
     const inp = wardrobe.update(raw) ? { ...raw, ...NEUTRAL } : raw;
     window.__game.lastInput = inp;
@@ -343,11 +377,23 @@ async function start() {
     if (inp.viewToggle) rig.toggleView();
     player.fps = rig.view === 'fps';
 
-    player.step(dt, inp, world, yaw);
-    rig.update(dt, player.pos, yaw, pitch, { ...player.state }, world);
+    if (convoy && !convoyBroken) { try { convoy.update(dt); } catch (e) { convoyBroken = true; console.error('convoi : erreur, il est arrêté', e); } }      // les blindés avancent (une erreur ici ne doit pas bloquer le reste du jeu)
+    let bctl = null, bcam = null;                               // blindé : monter, rouler, descendre (boarding.js) ; il pilote alors le joueur et, pendant l'installation, la caméra
+    for (const c of convoys) {
+      let r;
+      try { r = c.update(dt, inp.interact); } catch (e) { console.error('blindé : erreur, tout le monde est libéré', e); c.abort(e); r = { control: false }; }
+      if (r.control) bctl = r; if (r.cam) bcam = r.cam;
+    }
+    player.locked = convoys.some((c) => c.gunnerFree);          // tireur à la trappe : il garde ses commandes de tir mais ne marche pas
+    if (!bctl) player.step(dt, inp, world, yaw);
+    rig.update(dt, bctl ? bctl.focus : player.pos, yaw, pitch, bctl ? { ...player.state, crouch: false } : { ...player.state }, world);      // (accroupi : la caméra descend, sauf quand le blindé pilote le joueur)
+    if (bcam) {                                                 // caméra de cinéma : fondu de la caméra du jeu vers un point de vue qui montre la porte et l'intérieur
+      _cinCam.position.copy(bcam.pos); _cinCam.lookAt(bcam.look); _cinCam.updateMatrixWorld();
+      camera.position.lerp(bcam.pos, bcam.w); camera.quaternion.slerp(_cinCam.quaternion, bcam.w); camera.updateMatrixWorld();
+    }
     // point visé : le centre de l'image, à 30 m devant la caméra
     const target = camera.getWorldPosition(new THREE.Vector3()).addScaledVector(camera.getWorldDirection(new THREE.Vector3()), 30);
-    player.pose(dt, target);
+    if (!bctl) player.pose(dt, target);
     listen(); playerSounds(dt);
     skirmish.update(dt);
     npcSteps(dt);
@@ -358,7 +404,7 @@ async function start() {
     { const d = camera.getWorldDirection(new THREE.Vector3()); hud.updateIndicators(dt, Math.atan2(d.x, d.z), player.pos); }     // arcs : d'où viennent les tirs
 
     cooldown -= dt;
-    if (inp.fire && cooldown <= 0 && player.canShoot()) { shoot(player, world, skirmish); player.onShot(); cooldown = player.state.weapon === 'rifle' ? 0.1 : 0.25; }
+    if (inp.fire && !bctl && !bcam && cooldown <= 0 && player.canShoot()) { shoot(player, world, skirmish); player.onShot(); cooldown = player.state.weapon === 'rifle' ? 0.1 : 0.25; }
     for (let i = tracers.length - 1; i >= 0; i--) {
       tracers[i].t -= dt;
       if (tracers[i].t <= 0) { scene.remove(tracers[i].line); tracers[i].line.geometry.dispose(); tracers.splice(i, 1); }
@@ -369,11 +415,12 @@ async function start() {
     muzzle.update(dt);
     hud.updateTags([                                            // repères nom + vie au-dessus de la tête : joueur (bleu), alliés (vert), miliciens (rouge)
       { id: 'joueur', kind: 'self', name: 'Joueur', player, health: player.health, dead: player.health.dead, hidden: rig.view === 'fps' },
-      ...allies.map((a) => ({ id: a.id, kind: 'ally', name: a.def.name ?? a.id.replace('allie_', 'Allié '), player: a.player, health: a.health, dead: a.dead })),
-      ...npcs.map((n) => ({ id: n.id, kind: 'enemy', name: n.def.name ?? n.id.replace('pnj_', 'Milicien '), player: n.player, health: n.health, dead: n.dead, hidden: !!n._asleep })),
+      ...allies.map((a) => ({ id: a.id, kind: 'ally', name: a.def.name ?? a.id.replace('allie_', 'Allié '), player: a.player, health: a.health, dead: a.dead, thought: a.brain.thought })),
+      ...npcs.map((n) => ({ id: n.id, kind: 'enemy', name: n.def.name ?? n.id.replace('pnj_', 'Milicien '), player: n.player, health: n.health, dead: n.dead, hidden: !!n._asleep, thought: n.brain.thought })),
     ], camera);
     { const d = camera.getWorldDirection(new THREE.Vector3());          // carte de repérage : le haut = où regarde la caméra
-      hud.updateRadar({ origin: player.pos, heading: Math.atan2(d.x, d.z),
+      if (convoy) { try { hud.setConvoy(convoy.progress()); } catch { /* le panneau n'est pas vital */ } }
+      hud.updateRadar({ origin: player.pos, heading: Math.atan2(d.x, d.z), road: roadPts, convoy: convoy ? convoy.items.map((it) => ({ pos: it.root.position, alive: it.v.state !== 'neutralise' })) : [],
         enemies: npcs.map((n) => ({ pos: n.player.pos, state: n.brain.state, dead: n.dead })), allies: allies.map((a) => ({ pos: a.player.pos, dead: a.dead })) }); }
     blood.update(dt);
     dust.update(dt, [player, ...npcs.filter((n) => !n._asleep).map((n) => n.player)]);           // grains et voiles de poussière ; nuages sous les pas de ceux qui courent

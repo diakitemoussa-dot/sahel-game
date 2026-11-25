@@ -97,6 +97,7 @@ export class Input {
     let combo = p('KeyX');                                     // X : enchaîne toutes les animations de combat (Triangle sur la manette)
     let kick = p('KeyF');                                      // F : coups de pied seulement (pas de bouton séparé sur la manette)
     const sensDown = p('PageDown') || p('NumpadSubtract'), sensUp = p('PageUp') || p('NumpadAdd');   // sensibilité du viseur : PageDown moins, PageUp plus
+    let interact = p('KeyE');                                  // E : monter dans le blindé, l'arrêter, descendre
     let wardrobeToggle = p('KeyU');                            // U : menu des tenues (Select sur la manette)
     let menuLeft = p('ArrowLeft'), menuRight = p('ArrowRight');
     const menuOk = p('Enter'), menuBack = p('Escape');         // dans le menu seulement (le jeu ignore ses commandes quand il est ouvert)
@@ -139,6 +140,6 @@ export class Input {
     this.pressed.clear();
     return { moveX: mx, moveY: my, lookX, lookY, padLookX, padLookY, fire, aim, sprint, sniperHold, jump, crouchToggle, toggleWeapon, weapon, viewToggle, sniperToggle,
              reload, melee, combo, kick, wave, victory, hit, deadToggle, downedToggle,
-             wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, ...this.override };
+             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, ...this.override };
   }
 }

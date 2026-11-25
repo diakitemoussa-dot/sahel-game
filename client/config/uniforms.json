@@ -1,13 +1,6 @@
 {
-  "default": "wax",
+  "default": "militaire",
   "uniforms": [
-    {
-      "id": "wax",
-      "name": "Tenue wax",
-      "description": "Sweat à capuche wax, pantalon cargo, baskets",
-      "file": null,
-      "hide": []
-    },
     {
       "id": "militaire",
       "name": "Militaire noir",
@@ -57,18 +50,6 @@
       ]
     },
     {
-      "id": "militaire_gris",
-      "name": "Militaire gris",
-      "description": "Treillis gris nuancé, gilet, casque, cagoule, ceinture et bottes noirs, gants",
-      "file": "assets/uniforms/militaire_gris.glb",
-      "hide": [
-        "Hoodie",
-        "Pants",
-        "Shoes",
-        "Hair_Twists"
-      ]
-    },
-    {
       "id": "pnj_milicien",
       "name": "Milicien du désert",
       "description": "Tenue des PNJ (pas dans le menu du joueur) : foulard kaki, masque noir, tunique indigo, gilet olive, cuir",
@@ -79,7 +60,8 @@
         "Shoes",
         "Hair_Twists"
       ],
-      "menu": false
+      "menu": false,
+      "flag": false
     }
   ]
 }

@@ -62,6 +62,7 @@ export class GameMenu {
 <section class="gm-screen gm-pause" data-screen="pause">
   <div class="gm-col">
     <h1 class="mid">PAUSE</h1>
+    <p class="gm-why"></p>
     <nav class="gm-nav">
       <button class="gm-btn primary" data-act="resume">REPRENDRE</button>
       <button class="gm-btn" data-act="tenues">TENUES</button>
@@ -148,7 +149,11 @@ export class GameMenu {
   /** Fenêtre quittée / retrouvée : la vidéo d'intro s'arrête et repart. */
   suspendMedia() { if (this.flow.state === 'intro') { try { this.video.pause(); } catch { /* rien */ } } }
   resumeMedia() { if (this.flow.state === 'intro') this.video.play?.().catch?.(() => {}); }
-  pause() { if (this.flow.pause()) { this.render(); return true; } return false; }
+  /** Met en pause ; `why` : ce qui l'a déclenchée, écrit sous « PAUSE » (le joueur sait pourquoi le jeu s'est arrêté). */
+  pause(why = '') {
+    if (this.flow.pause()) { this.render(); const el = this.root.querySelector('.gm-why'); if (el) el.textContent = why; return true; }
+    return false;
+  }
 
   _sfx(name) { this.hooks.onSfx?.(name); }
 
@@ -214,7 +219,7 @@ export class GameMenu {
   _key(e) {
     const s = this.flow.state;
     if (s === 'playing') {
-      if (e.code === 'Escape' && !this.hooks.wardrobeOpen?.()) { if (this.pause()) this.hooks.onPause?.(); }
+      if (e.code === 'Escape' && !this.hooks.wardrobeOpen?.()) { if (this.pause('Touche Échap')) this.hooks.onPause?.(); }
       return;
     }
     if (s === 'tenues') return;                                         // le choix de tenue gère lui-même ses touches

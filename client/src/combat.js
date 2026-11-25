@@ -17,12 +17,12 @@ export const PLAYER_DAMAGE = { rifle: 25, pistol: 15, headshot: 2,
   'Melee Punch': 20, 'Punch': 15, 'Cross Punch': 20, 'Elbow Punch': 20, 'Kick': 30, 'Side Kick': 30, 'Pistol Whip': 20 };
 // Moment (s après le début de l'animation) où le coup touche
 export const MELEE_DELAY = { 'Melee Punch': 0.35, 'Punch': 0.30, 'Cross Punch': 0.30, 'Elbow Punch': 0.30, 'Kick': 0.30, 'Side Kick': 0.35, 'Pistol Whip': 0.35 };
-// Dégâts infligés PAR un PNJ au joueur (100 points de vie : 17 balles ou 9 coups)
-export const NPC_DAMAGE = { rifle: 6, melee: 12 };
+// Dégâts infligés PAR un PNJ au joueur (100 points de vie : 20 balles ou 9 coups)
+export const NPC_DAMAGE = { rifle: 5, melee: 12 };
 // Dégâts infligés PAR un allié à un milicien (100 points de vie : 10 balles, ou 7 coups)
 export const ALLY_DAMAGE = { rifle: 10, melee: 15 };
 export const ENEMY_HP = 160;                    // points de vie d'un milicien (7 balles de fusil au lieu de 4)
-export const ENEMY_FIRE_GAP = 0.12;             // secondes entre deux balles d'un milicien en rafale (avant 0,2)
+export const ENEMY_FIRE_GAP = 0.15;             // secondes entre deux balles d'un milicien en rafale (0,2 au début, 0,12 ensuite : un cran de moins d'intensité)
 export const ENEMY_MELEE_GAP = 0.9;             // secondes entre deux attaques au corps à corps (avant 1,3)
 export const MELEE_RANGE = 1.9;                 // m
 export const MELEE_HALF_ANGLE = Math.PI * 0.32; // ~58° de chaque côté du regard

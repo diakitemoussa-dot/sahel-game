@@ -87,9 +87,10 @@ function mergeStatic() {
     const buffer = root.listBuffers()[0];
     const ids = new Map(); const id = (o) => { if (!ids.has(o)) ids.set(o, ids.size); return ids.get(o); };
     const groups = new Map();
+    const animated = new Set(root.listAnimations().flatMap((a) => a.listChannels().map((c) => c.getTargetNode())));      // un nœud animé (porte, roue...) garde sa place : on ne le fond pas dans les pièces fixes
     for (const node of root.listNodes()) {
       const mesh = node.getMesh();
-      if (!mesh || node.getSkin() || node.listChildren().length) continue;
+      if (!mesh || node.getSkin() || node.listChildren().length || animated.has(node)) continue;
       const prims = mesh.listPrimitives();
       if (prims.length !== 1) continue;
       const p = prims[0];

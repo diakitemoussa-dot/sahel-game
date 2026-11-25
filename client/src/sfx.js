@@ -1,6 +1,7 @@
 // Effets sonores du jeu : lecture des sons de sfxsynth.js, placés dans l'espace (volume, gauche/droite, étouffement, retard).
 // Le navigateur n'autorise le son qu'après un geste du joueur (clic, touche) : le contexte audio est créé et réveillé à ce moment.
 import { SYNTH, startWind, noiseBuffer } from './sfxsynth.js';
+import { SAMPLES, pickSample, loadSamples } from './sfxsamples.js';
 import { spatial } from './sfxlogic.js';
 import { dopplerRatio, radialSpeed } from './aircraftlogic.js';
 
@@ -69,6 +70,7 @@ export class Sfx {
     this.enabled = enabled; this.volume = volume;
     this.ctx = null; this.master = null; this.wind = null; this.windOn = false;
     this.listener = { x: 0, z: 0 }; this.yaw = 0;
+    this.samples = null;                                // sons de tir enregistrés (sfxsamples.js), chargés après le premier geste du joueur
     this.count = {};                                    // nombre de fois que chaque son a été demandé (pour les tests)
     this.last = {};
     this.rng = Math.random;
@@ -87,6 +89,7 @@ export class Sfx {
         this.master = this.ctx.createGain(); this.master.gain.value = this.volume;
         this.master.connect(comp); comp.connect(this.ctx.destination);
         this._syncWind();
+        loadSamples(this.ctx).then((s) => { this.samples = s; }).catch(() => {});
       }
       if (this.ctx.state === 'suspended') this.ctx.resume?.().catch?.(() => {});
     } catch { return false; }
@@ -127,6 +130,13 @@ export class Sfx {
     if (lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; node.connect(f); node = f; }
     if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; node.connect(p); node = p; }
     node.connect(this.master);
+    const def = SAMPLES[name], pick = def && this.samples ? pickSample(def, this.rng(), this.rng()) : null;
+    if (pick && this.samples[pick.name]) {                                       // le vrai son de tir (le coup tiré au hasard, avec une hauteur légèrement différente)
+      const src = ctx.createBufferSource(); src.buffer = this.samples[pick.name]; src.playbackRate.value = pick.rate;
+      if (def.vol !== 1) first.gain.value = vol * def.vol;
+      src.connect(first); src.start(now + 0.005 + delay);
+      return true;
+    }
     SYNTH[name](ctx, first, now + 0.005 + delay, { r: this.rng() });
     return true;
   }

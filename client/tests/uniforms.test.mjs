@@ -8,9 +8,9 @@ import { padCommands, PAD } from '../src/gamepad.js';
 const real = JSON.parse(readFileSync(new URL('../config/uniforms.json', import.meta.url), 'utf8'));
 const lib = parseLibrary(real);
 
-test('la vraie bibliothèque est valide, avec la tenue wax par défaut et la tenue militaire', () => {
-  assert.equal(lib.default, 'wax');
-  assert.deepEqual(lib.uniforms.map((u) => u.id), ['wax', 'militaire', 'militaire_camo', 'militaire_sable', 'militaire_roux', 'militaire_gris', 'pnj_milicien']);
+test('la vraie bibliothèque est valide, avec la tenue militaire par défaut', () => {
+  assert.equal(lib.default, 'militaire');
+  assert.deepEqual(lib.uniforms.map((u) => u.id), ['militaire', 'militaire_camo', 'militaire_sable', 'militaire_roux', 'pnj_milicien']);
 });
 
 test('chaque fichier de tenue annoncé existe', () => {
@@ -21,12 +21,12 @@ test('la tenue militaire cache les vêtements de base mais pas la peau', () => {
   const mil = pickUniform(lib, 'militaire');
   assert.deepEqual(mil.hide.sort(), ['Hair_Twists', 'Hoodie', 'Pants', 'Shoes']);
   assert.ok(!hideableNames(lib).includes('Body'));
-  assert.deepEqual(pickUniform(lib, 'wax').hide, []);
 });
 
 test('identifiant inconnu : on retombe sur la tenue par défaut', () => {
-  assert.equal(pickUniform(lib, 'nimporte-quoi').id, 'wax');
-  assert.equal(pickUniform(lib, null).id, 'wax');
+  assert.equal(pickUniform(lib, 'nimporte-quoi').id, 'militaire');
+  assert.equal(pickUniform(lib, null).id, 'militaire');
+  assert.equal(pickUniform(lib, 'wax').id, 'militaire', 'ancienne sauvegarde : tenue wax retirée');
 });
 
 test('configuration incohérente : erreurs claires', () => {
@@ -37,20 +37,19 @@ test('configuration incohérente : erreurs claires', () => {
 });
 
 test('menu : aperçu au déplacement, validation, annulation', () => {
-  const m = new WardrobeMenu(lib.uniforms.filter((u) => u.menu), 'wax');
+  const m = new WardrobeMenu(lib.uniforms.filter((u) => u.menu), 'militaire');
   assert.equal(m.move(1), null, 'fermé : rien ne se passe');
   m.show();
-  assert.equal(m.move(1), 'militaire');
   assert.equal(m.move(1), 'militaire_camo');
-  for (const id of ['militaire_sable', 'militaire_roux', 'militaire_gris', 'wax']) assert.equal(m.move(1), id, id === 'wax' ? 'la sélection boucle' : undefined);
-  assert.equal(m.move(-1), 'militaire_gris');
-  assert.equal(m.cancel(), 'wax', 'annuler remet la tenue validée');
+  for (const id of ['militaire_sable', 'militaire_roux', 'militaire']) assert.equal(m.move(1), id, id === 'militaire' ? 'la sélection boucle' : undefined);
+  assert.equal(m.move(-1), 'militaire_roux');
+  assert.equal(m.cancel(), 'militaire', 'annuler remet la tenue validée');
   assert.equal(m.open, false);
   m.show(); m.move(1);
-  assert.equal(m.confirm(), 'militaire');
-  assert.equal(m.saved, 'militaire');
+  assert.equal(m.confirm(), 'militaire_camo');
+  assert.equal(m.saved, 'militaire_camo');
   m.show();
-  assert.equal(m.hovered.id, 'militaire', 'rouvert sur la tenue validée');
+  assert.equal(m.hovered.id, 'militaire_camo', 'rouvert sur la tenue validée');
 });
 
 function fake() {
@@ -65,22 +64,22 @@ test('wardrobe : les commandes pilotent le menu, le choix est mémorisé', async
   const f = fake();
   const w = new Wardrobe({ outfit: f.outfit, lib, storage: f.storage });
   await w.start();
-  assert.deepEqual(f.applied, ['wax']);
+  assert.deepEqual(f.applied, ['militaire']);
   assert.equal(w.update({ wardrobeToggle: true }), true, 'ouvert : le jeu doit ignorer les commandes');
   assert.equal(w.update({ menuRight: true }), true);
   assert.equal(w.update({ menuOk: true }), false, 'validé : menu fermé');
-  assert.equal(loadSavedId(f.storage), 'militaire');
-  assert.equal(f.applied.at(-1), 'militaire');
+  assert.equal(loadSavedId(f.storage), 'militaire_camo');
+  assert.equal(f.applied.at(-1), 'militaire_camo');
   const w2 = new Wardrobe({ outfit: fake().outfit, lib, storage: f.storage });   // nouvelle partie : même choix
-  assert.equal(w2.menu.saved, 'militaire');
+  assert.equal(w2.menu.saved, 'militaire_camo');
 });
 
 test('wardrobe : Échap (ou B) annule et remet la tenue précédente', async () => {
   const f = fake();
-  const w = new Wardrobe({ outfit: f.outfit, lib, storage: f.storage, savedId: 'wax' });
+  const w = new Wardrobe({ outfit: f.outfit, lib, storage: f.storage, savedId: 'militaire' });
   w.update({ wardrobeToggle: true }); w.update({ menuRight: true });
   assert.equal(w.update({ menuBack: true }), false);
-  assert.equal(f.applied.at(-1), 'wax');
+  assert.equal(f.applied.at(-1), 'militaire');
   assert.equal(loadSavedId(f.storage), null, 'rien de mémorisé');
   w.update({ wardrobeToggle: true }); w.update({ menuLeft: true });
   assert.equal(w.update({ crouchToggle: true }), false, 'B de la manette annule aussi');
@@ -113,9 +112,31 @@ test('la tenue des PNJ est à part : absente du menu du joueur, et un joueur ne 
   assert.equal(pickUniform(lib, 'pnj_milicien').menu, false);
   const f = fake();
   const w = new Wardrobe({ outfit: f.outfit, lib, storage: f.storage });
-  assert.deepEqual(w.menu.entries.map((e) => e.id), ['wax', 'militaire', 'militaire_camo', 'militaire_sable', 'militaire_roux', 'militaire_gris']);
+  assert.deepEqual(w.menu.entries.map((e) => e.id), ['militaire', 'militaire_camo', 'militaire_sable', 'militaire_roux']);
   await w.select('pnj_milicien');                                 // identifiant de PNJ : le joueur garde la tenue par défaut
-  assert.equal(w.menu.saved, 'wax');
+  assert.equal(w.menu.saved, 'militaire');
   const w2 = new Wardrobe({ outfit: f.outfit, lib, storage: null, savedId: 'pnj_milicien' });
-  assert.equal(w2.menu.saved, 'wax', 'une ancienne sauvegarde ne peut pas imposer une tenue de PNJ');
+  assert.equal(w2.menu.saved, 'militaire', 'une ancienne sauvegarde ne peut pas imposer une tenue de PNJ');
+});
+
+test('équipe : les alliés prennent la tenue du joueur tout de suite, puis la changent avec lui', async () => {
+  const f = fake(), a1 = fake(), a2 = fake();
+  const w = new Wardrobe({ outfit: f.outfit, lib, storage: f.storage });
+  await w.start();
+  await w.addTeam([a1.outfit, a2.outfit]);
+  assert.deepEqual(a1.applied, ['militaire']); assert.deepEqual(a2.applied, ['militaire']);
+  await w.select('militaire_sable');
+  assert.equal(a1.applied.at(-1), 'militaire_sable'); assert.equal(a2.applied.at(-1), 'militaire_sable');
+  w.update({ wardrobeToggle: true }); w.update({ menuRight: true });                 // aperçu : l'équipe ne bouge pas encore
+  assert.equal(a1.applied.at(-1), 'militaire_sable');
+  w.update({ menuOk: true }); await new Promise((r) => setTimeout(r, 0));
+  assert.equal(a1.applied.at(-1), w.menu.saved); assert.equal(a2.applied.at(-1), w.menu.saved);
+});
+
+test('équipe : un allié dont la tenue ne charge pas ne bloque pas les autres', async () => {
+  const w = new Wardrobe({ outfit: fake().outfit, lib, storage: null });
+  const good = fake(), log = console.error; console.error = () => {};
+  await w.addTeam([{ apply: async () => { throw new Error('absent'); } }, good.outfit]);
+  console.error = log;
+  assert.deepEqual(good.applied, ['militaire']);
 });

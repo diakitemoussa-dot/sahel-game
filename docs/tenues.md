@@ -7,8 +7,7 @@ aux mêmes os que le personnage de base.
 
 | Id | Nom | Contenu |
 |---|---|---|
-| `wax` | Tenue wax (par défaut) | Sweat à capuche, pantalon cargo, baskets (dans `player.glb`) |
-| `militaire` | Militaire camouflage | Treillis camouflage sable/vert/brun, gilet avec poches et bretelles, ceinture jaune moutarde, casque, cagoule, lunettes, gants, genouillères, bottes, écusson du Mali sur l'épaule (`assets/uniforms/militaire.glb`, 1,0 Mo après compression) |
+| `militaire` | Militaire noir (par défaut) | Treillis camouflage sable/vert/brun, gilet avec poches et bretelles, ceinture jaune moutarde, casque, cagoule, lunettes, gants, genouillères, bottes, écusson du Mali sur l'épaule (`assets/uniforms/militaire.glb`, 1,0 Mo après compression) |
 
 ## Choisir sa tenue en jeu
 
@@ -80,8 +79,7 @@ Chaque couleur créée dans Blender reste dans la bibliothèque (`client/config/
 | `militaire_camo` | Militaire camouflage (version d'origine) | `militaire_camo.glb` |
 | `militaire_sable` | Militaire sable (treillis uni #B89E70) | `militaire_sable.glb` |
 | `militaire_roux` | Militaire brun roux (treillis uni #774122) | `militaire_roux.glb` |
-| `militaire_gris` | Militaire gris (treillis gris nuancé, accessoires noirs, gants) | `militaire_gris.glb` |
 
 `camo`, `sable` et `roux` partent de l'export d'origine (gilet vert, casque vert, ceinture moutarde) : `sable` et `roux` sont créés avec
-`node tools/glb/recolor_material.mjs <militaire_camo.glb> <sortie.glb> U_Camo <RRGGBB>`. `gris` est l'export du 2026-11-06 (sauvegardé dans `assets/backups/`).
-Les alliés portent `militaire` (noir). Scénarios Chrome `tenue_camo|sable|roux|gris`.
+`node tools/glb/recolor_material.mjs <militaire_camo.glb> <sortie.glb> U_Camo <RRGGBB>`.
+Les alliés portent `militaire` (noir). Scénarios Chrome `tenue_camo|sable|roux`.

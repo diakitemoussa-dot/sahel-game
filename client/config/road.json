@@ -1,0 +1,13 @@
+{
+  "roads": [
+    {
+      "id": "piste_ouest_nord_est",
+      "name": "Longue piste qui traverse le désert, de l'ouest vers le village",
+      "width": 6,
+      "points": [
+        [-215, -100], [-180, -104], [-145, -110], [-100, -98], [-64, -74], [-30, -60],
+        [10, -52], [45, -30], [58, -2], [62, 34], [82, 62], [98, 80]
+      ]
+    }
+  ]
+}

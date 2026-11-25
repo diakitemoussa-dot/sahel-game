@@ -10,6 +10,7 @@ import { Player } from './player.js';
 import { Outfit } from './uniforms.js';
 import { Patrol } from './patrol.js';
 import { NpcBrain } from './npcbrain.js';
+import { Mind } from './npcmind.js';
 import { Follower } from './allybrain.js';
 import { giveSkin } from './skins.js';
 import { keepOut } from './firelogic.js';
@@ -28,8 +29,8 @@ export class Npc {
     // un allié voit tout autour de lui et de plus loin : il surveille les environs du joueur
     // réactions rapides : repère en 0,25 à 0,3 s, rafales plus serrées, esquive brève
     this.brain = new NpcBrain(team === 'ally'
-      ? { seed, sight: 32, fov: Math.PI * 2, hearing: 50, engageMax: 18, reaction: 0.25, burstCycle: 1.2, burstLen: 0.5 }
-      : { seed, reaction: 0.15, sight: 34, hearing: 60, burstCycle: 0.8, burstLen: 0.62, hurtTime: 0.3, dodgeTime: 0.3, dodgeCooldown: 0.8, hideTime: 0.65, peekTime: 0.95 });      // miliciens : repèrent presque aussitôt, sursaut court, esquive et abri vifs, rafales longues et rapprochées
+      ? { seed, mind: new Mind({ seed, team }), sight: 32, fov: Math.PI * 2, hearing: 50, engageMax: 18, reaction: 0.25, burstCycle: 1.2, burstLen: 0.5 }
+      : { seed, mind: new Mind({ seed, team }), reaction: 0.15, sight: 34, hearing: 60, burstCycle: 0.8, burstLen: 0.62, hurtTime: 0.3, dodgeTime: 0.3, dodgeCooldown: 0.8, hideTime: 0.65, peekTime: 0.95 });      // miliciens : repèrent presque aussitôt, sursaut court, esquive et abri vifs, rafales longues et rapprochées
     if (team === 'enemy') { this.health.max = ENEMY_HP; this.health.hp = ENEMY_HP; }      // un milicien encaisse plus avant de tomber
     this.follower = team === 'ally' ? new Follower({ slot: def.slot ?? [1.8, 2.4] }) : null;
     this.override = null;
@@ -103,7 +104,9 @@ export async function loadNpcs(scene, world, lib, defs, team = 'enemy') {
     await giveSkin(player.model, def.skin);                 // teinte de peau propre à ce PNJ (noire, métisse, blanche)
     const outfit = new Outfit(player, lib);
     try { await outfit.apply(def.uniform); } catch (e) { console.error(`PNJ ${def.id} : tenue indisponible`, e); }
-    out.push(new Npc(player, def, patrol, route, seed++, team));
+    const npc = new Npc(player, def, patrol, route, seed++, team);
+    npc.outfit = outfit;                                      // pour que les alliés puissent changer de tenue avec le joueur
+    out.push(npc);
   }
   return out;
 }

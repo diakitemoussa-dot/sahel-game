@@ -16,8 +16,11 @@ export class Hud {
     this.kills = add('kills');
     this.missionEl = add('mission');                                      // objectif : miliciens éliminés et hommes de l'escouade encore debout
     this.bannerEl = add('banner');                                        // grand message (mission accomplie)
-    this.ammoEl = add('ammo');                                            // munitions de l'arme tenue : « 24 / 30 », ou « RECHARGE… »
+    this.ammoEl = add('ammo');                                            // munitions de l'arme tenue : « 24 / 50 », ou « RECHARGE… »
     this.toastEl = add('toast');
+    this.convoyEl = add('convoy');                                         // avancement du convoi de blindés (nombre vivants, pourcentage, position de chacun sur la route)
+    this.promptEl = add('prompt');                                        // « E : monter dans le blindé » (cliquable : écrans tactiles)
+    this.promptEl.addEventListener('click', (e) => { e.stopPropagation(); this._onPrompt?.(); });
     this.dirs = add('dirs');                                              // arcs jaunes : d'où viennent les tirs
     this.radarEl = document.createElement('canvas'); this.radarEl.id = 'radar'; this.radarEl.width = this.radarEl.height = 320;     // carte de repérage
     this.radarEl.title = 'Carte : rouge = ennemis, vert = alliés'; document.body.appendChild(this.radarEl);
@@ -26,6 +29,21 @@ export class Hud {
     this.indicators = new Map();                                          // id du tireur -> { x, z, age, power, el }
     this._t = {};
   }
+  /** Invite d'action au bas de l'écran (null : la cacher). */
+  setPrompt(text) { if (text !== this._prompt) { this._prompt = text; this.promptEl.textContent = text ?? ''; this.promptEl.style.display = text ? 'block' : 'none'; } }
+  onPrompt(fn) { this._onPrompt = fn; }
+  /** Panneau du convoi. info : voir Convoy.progress() ou null (pas de convoi : le panneau disparaît). */
+  setConvoy(info) {
+    const key = info ? `${info.alive}/${info.total}|${Math.round(info.fraction * 100)}|${info.done}|${info.vehicles.map((v) => `${Math.round(v.f * 60)}${v.alive ? 'a' : 'd'}`).join(',')}` : '';
+    if (key === this._convoyKey) return;
+    this._convoyKey = key;
+    const el = this.convoyEl; el.style.display = info ? 'block' : 'none';
+    if (!info) return;
+    const state = info.alive === 0 ? '<span class="bad">neutralisé</span>' : info.done ? '<span class="ok">arrivé</span>' : `${Math.round(info.fraction * 100)} %`;
+    const marks = info.vehicles.map((v) => `<i class="${v.alive ? 'a' : 'd'}" style="left:${(v.f * 100).toFixed(1)}%"></i>`).join('');
+    el.innerHTML = `<b>CONVOI</b> ${info.alive}/${info.total} blindés · ${state}<div class="route"><u style="width:${(info.fraction * 100).toFixed(1)}%"></u>${marks}</div>`;
+  }
+
   hideMessage() { this.msg.style.display = 'none'; }
   showMessage(t) { this.msg.style.display = 'flex'; this.msg.textContent = t; }
 
@@ -74,9 +92,9 @@ export class Hud {
       let el = this.tagEls.get(t.id);
       if (!el) {
         el = document.createElement('div'); el.className = `tag ${t.kind}`;
-        el.innerHTML = '<b></b><i><u></u></i><em>▼</em>';
+        el.innerHTML = '<span class="th"></span><b></b><i><u></u></i><em>▼</em>';
         el.querySelector('b').textContent = t.name;
-        el._u = el.querySelector('u');
+        el._u = el.querySelector('u'); el._th = el.querySelector('.th');
         document.body.appendChild(el); this.tagEls.set(t.id, el);
       }
       const p = t.player.pos;
@@ -88,13 +106,15 @@ export class Hud {
       el.style.left = `${(this._v.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-this._v.y * 0.5 + 0.5) * innerHeight}px`;
       el.style.opacity = Math.max(0.35, Math.min(1, 1.4 - dist / 60)).toFixed(2);
       el._u.style.width = `${Math.max(0, t.health.frac) * 100}%`;
+      const th = dist < 45 ? (t.thought ?? '') : '';                                       // ce que le PNJ pense en ce moment (npcmind.js)
+      if (el._thText !== th) { el._thText = th; el._th.textContent = th; el._th.style.display = th ? 'block' : 'none'; }
     }
   }
 
 
   /** Carte de repérage : le joueur au centre, le haut = où regarde la caméra. Rouge : miliciens (cerclés s'ils combattent), vert : alliés ;
    *  hors de portée, un point pâle sur le bord indique la direction. entities : { origin: {x, z}, heading, enemies: [{ pos, state, dead }], allies: [{ pos, dead }] }. */
-  updateRadar({ origin, heading, enemies = [], allies = [] }) {
+  updateRadar({ origin, heading, enemies = [], allies = [], road = [], convoy = [] }) {
     const cv = this.radarEl, g = cv.getContext('2d'), W = cv.width, R = W / 2 - 6, c = W / 2;
     g.clearRect(0, 0, W, W);
     g.save();
@@ -114,6 +134,19 @@ export class Hud {
       if (ring) { g.strokeStyle = color; g.lineWidth = 3; g.beginPath(); g.arc(x, y, size + 6, 0, Math.PI * 2); g.stroke(); }
       g.globalAlpha = 1;
     };
+    if (road.length > 1) {                                                // la piste du convoi, là où elle passe dans la portée du radar
+      g.strokeStyle = 'rgba(236,206,140,.55)'; g.lineWidth = 3; g.lineJoin = 'round'; g.beginPath();
+      let pen = false;
+      for (const q of road) { const p = radarPoint(origin, heading, q); if (p.far) { pen = false; continue; } const x = c + p.x * R, y = c + p.y * R; if (pen) g.lineTo(x, y); else g.moveTo(x, y); pen = true; }
+      g.stroke();
+    }
+    for (const v of convoy) {                                             // les blindés : carrés dorés (gris barrés quand ils sont neutralisés) ; hors de portée : posés sur le bord
+      const p = radarPoint(origin, heading, v.pos), x = c + p.x * R, y = c + p.y * R;
+      g.globalAlpha = p.far ? 0.55 : 1; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.8)';
+      if (v.alive) { g.fillStyle = '#ffd23a'; g.fillRect(x - 8, y - 8, 16, 16); g.strokeRect(x - 8, y - 8, 16, 16); }
+      else { g.strokeStyle = '#8a8a8a'; g.beginPath(); g.moveTo(x - 8, y - 8); g.lineTo(x + 8, y + 8); g.moveTo(x + 8, y - 8); g.lineTo(x - 8, y + 8); g.stroke(); }
+      g.globalAlpha = 1;
+    }
     for (const a of allies) if (!a.dead) dot(a.pos, '#6fe35f', 8, false);
     for (const e of enemies) if (!e.dead) dot(e.pos, '#ff5a4a', 9, e.state === 'engage' || e.state === 'alert' || e.state === 'hurt');
     g.restore();

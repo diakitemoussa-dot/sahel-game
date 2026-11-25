@@ -479,6 +479,93 @@
           -123.5
         ]
       ]
+    },
+    {
+      "id": "pnj_lance_1",
+      "name": "Lance-missile 1",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 6,
+      "launcher": true,
+      "far": true,
+      "zone": "embuscade1",
+      "route": [
+        [
+          -17,
+          -94
+        ],
+        [
+          -14,
+          -94
+        ],
+        [
+          -14,
+          -92
+        ],
+        [
+          -17,
+          -92
+        ]
+      ],
+      "skin": "noire"
+    },
+    {
+      "id": "pnj_lance_2",
+      "name": "Lance-missile 2",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 6,
+      "launcher": true,
+      "far": true,
+      "zone": "embuscade2",
+      "route": [
+        [
+          10,
+          -19
+        ],
+        [
+          13,
+          -19
+        ],
+        [
+          13,
+          -17
+        ],
+        [
+          10,
+          -17
+        ]
+      ],
+      "skin": "metisse"
+    },
+    {
+      "id": "pnj_lance_3",
+      "name": "Lance-missile 3",
+      "uniform": "pnj_milicien",
+      "weapon": "rifle",
+      "wait": 6,
+      "launcher": true,
+      "far": true,
+      "zone": "embuscade3",
+      "route": [
+        [
+          75,
+          -28
+        ],
+        [
+          78,
+          -28
+        ],
+        [
+          78,
+          -26
+        ],
+        [
+          75,
+          -26
+        ]
+      ],
+      "skin": "blanche"
     }
   ],
   "allies": [

@@ -51,6 +51,7 @@ export class Wardrobe {
     const start = wanted.menu ? wanted.id : lib.default;
     this.menu = new WardrobeMenu(lib.uniforms.filter((u) => u.menu), start);      // les tenues sans menu (PNJ) ne sont pas proposées au joueur
     this.error = null;
+    this.team = [];                                  // les Outfit des alliés : ils portent la même tenue que le joueur
     this.ui?.bind?.(this);
   }
   get open() { return this.menu.open; }
@@ -60,6 +61,12 @@ export class Wardrobe {
     catch (e) { this.error = `Tenue indisponible : ${e.message}`; console.error(e); }
     this.ui?.render(this.menu, this.error);
   }
+  /** Habille toute l'équipe comme le joueur (tenue validée). Une tenue indisponible chez un allié ne bloque pas les autres. */
+  async _applyTeam(id) {
+    await Promise.all(this.team.map((o) => o.apply(id).catch((e) => console.error('tenue d’un allié indisponible', e))));
+  }
+  /** Ajoute des alliés à l'équipe : ils prennent tout de suite la tenue du joueur. */
+  addTeam(outfits) { this.team.push(...outfits); return this._applyTeam(this.menu.saved); }
   /** Habille le joueur avec la tenue enregistrée (au démarrage). */
   start() { return this._apply(this.menu.saved); }
   /** Choix direct, sans menu (tests). */
@@ -68,11 +75,12 @@ export class Wardrobe {
     this.menu.saved = u.menu ? u.id : this.lib.default;
     await this._apply(this.menu.saved);
     saveId(this.storage, this.menu.saved);
+    await this._applyTeam(this.menu.saved);
   }
 
   toggle() { if (this.menu.open) return this.cancel(); this.menu.show(); this.ui?.render(this.menu, this.error); return null; }
   move(dir) { const id = this.menu.move(dir); if (id) this._apply(id); this.ui?.render(this.menu, this.error); }
-  confirm() { const id = this.menu.confirm(); if (id) { saveId(this.storage, id); this._apply(id); } this.ui?.render(this.menu, this.error); }
+  confirm() { const id = this.menu.confirm(); if (id) { saveId(this.storage, id); this._apply(id); this._applyTeam(id); } this.ui?.render(this.menu, this.error); }
   cancel() { const id = this.menu.cancel(); if (id) this._apply(id); this.ui?.render(this.menu, this.error); }
 
   /** Appelé à chaque image avec les commandes lues. Renvoie vrai tant que le menu est ouvert (le jeu ignore alors les commandes). */

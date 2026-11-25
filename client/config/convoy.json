@@ -1,0 +1,25 @@
+{
+  "road": "piste_ouest_nord_est",
+  "file": "assets/vehicles/blinde.glb",
+  "starts": [
+    40,
+    23,
+    6
+  ],
+  "cruise": 3.2,
+  "spacing": 17,
+  "hp": 3,
+  "box": [
+    2.1,
+    5.0
+  ],
+  "launcher": {
+    "min": 30,
+    "max": 85,
+    "aim": 1.8,
+    "reload": [
+      10,
+      16
+    ]
+  }
+}

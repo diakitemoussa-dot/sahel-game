@@ -49,6 +49,7 @@ export class Player {
     this.yaw = 0; this.vy = 0; this.onGround = true;     // yaw : orientation du corps
     this.jumps = 0;                                       // sauts utilisés depuis le sol (0, 1 ou 2 : double saut)
     this.climb = null;                                    // escalade en cours : { t, dur, from, to }
+    this.locked = false;                                  // vrai : il reste à sa place (tireur à la trappe du blindé) ; il vise, tire, recharge, change d'arme, mais ne marche ni ne saute
     this.aimWeight = 1;                                   // 0 = canon libre, 1 = canon sur le centre : change progressivement
     this.smooth = true;                                   // false = ancien comportement (fondu court, visée d'un coup), pour comparer dans les tests
     this.orbiting = false;                                // vrai quand la caméra tourne autour du personnage à l'arrêt
@@ -187,7 +188,7 @@ export class Player {
     if (inp.hit) this._startOverlay('Hit Reaction');
     if (inp.deadToggle) { s.dead = !s.dead; s.downed = false; s.overlay = null; this.comboActive = false; this.current = null; }
     if (inp.downedToggle) { s.downed = !s.downed; s.dead = false; s.overlay = null; this.comboActive = false; this.current = null; }
-    if (inp.crouchToggle) s.crouch = !s.crouch;
+    if (inp.crouchToggle && !this.locked) s.crouch = !s.crouch;
     // sprint : stick gauche enfoncé (ou Maj) en poussant vers l'avant ; viser, tirer, s'accroupir ou une action l'interrompent
     s.sprint = !!inp.sprint && inp.moveY > 0.3 && !inp.aim && !inp.fire && !s.crouch && !s.overlay && !s.dead && !s.downed;
     s.raised = !this.relaxed && !s.overlay && !s.dead && !s.downed && !s.sprint;  // action, à terre ou sprint : le canon ne vise pas le centre
@@ -198,7 +199,7 @@ export class Player {
     s.aiming = !!inp.aim; s.firing = !!inp.fire;
     const shooting = s.firing && s.weapon !== 'none';
     // il ne glisse pas pendant le tir ni une action ; accroupi il peut se déplacer en marchant
-    const allowed = canMove({ dead: s.dead, downed: s.downed, overlay: s.overlay, shooting, crouch: s.crouch, onGround: this.onGround }) && !this.climb;
+    const allowed = canMove({ dead: s.dead, downed: s.downed, overlay: s.overlay, shooting, crouch: s.crouch, onGround: this.onGround }) && !this.climb && !this.locked;
 
     const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
     const r = new THREE.Vector3().crossVectors(f, UP);
@@ -216,7 +217,7 @@ export class Player {
       : speed >= SPEED.run ? 'run' : 'walk';
 
     // saut, puis double saut : en l'air, un deuxième appui près d'un rebord à portée de main fait GRIMPER dessus ; sinon c'est un second saut
-    if (inp.jump && !s.crouch && !s.dead && !s.downed && !this.climb) {
+    if (inp.jump && !s.crouch && !s.dead && !s.downed && !this.climb && !this.locked) {
       if (this.onGround) { this.vy = JUMP_SPEED; this.onGround = false; this.jumps = 1; }
       else if (this.jumps === 1) {
         const look = mag > 0.05 ? { x: dir.x / (dir.length() || 1), z: dir.z / (dir.length() || 1) } : { x: Math.sin(this.yaw), z: Math.cos(this.yaw) };
@@ -225,7 +226,9 @@ export class Player {
         else { this.vy = JUMP_SPEED; this.jumps = 2; this.current = null; }       // second saut (l'animation repart)
       }
     }
-    if (this.climb) {
+    if (this.locked) {
+      this.vy = 0; this.onGround = true; this.jumps = 0; this.climb = null;       // la position est imposée de l'extérieur (le blindé)
+    } else if (this.climb) {
       this._updateClimb(dt);
     } else {
       this.vy -= 18.0 * dt;

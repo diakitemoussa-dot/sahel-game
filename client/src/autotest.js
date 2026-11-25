@@ -109,19 +109,18 @@ const SCENARIOS = {
   tenue_camo: { frames: 60, expect: 'Rifle Aim', expectUniform: 'militaire_camo', setup: (g) => { g.wardrobe.select('militaire_camo'); g.look(2.6, 0.05); } },
   tenue_sable: { frames: 60, expect: 'Rifle Aim', expectUniform: 'militaire_sable', setup: (g) => { g.wardrobe.select('militaire_sable'); g.look(2.6, 0.05); } },
   tenue_roux: { frames: 60, expect: 'Rifle Aim', expectUniform: 'militaire_roux', setup: (g) => { g.wardrobe.select('militaire_roux'); g.look(2.6, 0.05); } },
-  tenue_gris: { frames: 60, expect: 'Rifle Aim', expectUniform: 'militaire_gris', setup: (g) => { g.wardrobe.select('militaire_gris'); g.look(2.6, 0.05); } },
   tenue_dos:       { frames: 165, expect: 'Rifle Aim', expectUniform: 'militaire', setup: (g) => { g.wardrobe.select('militaire'); g.look(0, 0.0); }, input: { padLookX: 1 } },
   tenue_run:       { frames: 200, expect: 'Rifle Run Tir', expectUniform: 'militaire', input: { moveY: 1 }, setup: (g) => { g.wardrobe.select('militaire'); } },
   tenue_pistol:    { frames: 150, expect: 'Pistol Idle Tir', expectUniform: 'militaire', setup: (g) => { g.wardrobe.select('militaire'); g.player.setWeapon('pistol'); } },
   tenue_kick:      { frames: 200, expectLog: ['Kick'], expectUniform: 'militaire', setup: (g) => { g.wardrobe.select('militaire'); },
                      phases: [{ until: 100, input: {} }, { until: 101, input: { kick: true } }, { until: 400, input: {} }] },
-  tenue_menu:      { frames: 200, expect: 'Rifle Aim', expectUniform: 'militaire', expectMenuOpen: false,
+  tenue_menu:      { frames: 200, expect: 'Rifle Aim', expectUniform: 'militaire_camo', expectMenuOpen: false,
                      phases: [{ until: 3, input: {} }, { until: 4, input: { wardrobeToggle: true } }, { until: 6, input: {} }, { until: 7, input: { menuRight: true } },
                               { until: 90, input: {} }, { until: 91, input: { menuOk: true } }, { until: 400, input: {} }] },
-  tenue_annule:    { frames: 150, expect: 'Rifle Aim', expectUniform: 'wax', expectMenuOpen: false,
+  tenue_annule:    { frames: 150, expect: 'Rifle Aim', expectUniform: 'militaire', expectMenuOpen: false,
                      phases: [{ until: 3, input: {} }, { until: 4, input: { wardrobeToggle: true } }, { until: 6, input: {} }, { until: 7, input: { menuRight: true } },
                               { until: 60, input: {} }, { until: 61, input: { menuBack: true } }, { until: 400, input: {} }] },
-  tenue_menu_ouvert: { frames: 80, expect: 'Rifle Aim', expectUniform: 'militaire', expectMenuOpen: true, keep: true,
+  tenue_menu_ouvert: { frames: 80, expect: 'Rifle Aim', expectUniform: 'militaire_camo', expectMenuOpen: true, keep: true,
                      phases: [{ until: 3, input: {} }, { until: 4, input: { wardrobeToggle: true } }, { until: 6, input: {} }, { until: 7, input: { menuRight: true } }, { until: 400, input: {} }] },
   tenue_kick_milieu: { frames: 106, expectUniform: 'militaire', setup: (g) => { g.wardrobe.select('militaire'); },
                      phases: [{ until: 100, input: {} }, { until: 101, input: { kick: true } }, { until: 400, input: {} }] },
@@ -169,6 +168,8 @@ const SCENARIOS = {
   combat_mort_joueur: { frames: 420, hostile: true, check: (g) => g.skirmish.log.some((e) => e.type === 'joueur_mort') && g.skirmish.log.some((e) => e.type === 'joueur_reapparait') && g.player.health.hp > 0 && !g.player.state.dead,
                         setup: (g) => { g.player.health.hp = 5; const n = g.npcs[0].player.pos; g.player.pos.set(n.x, g.world.groundY(n.x, n.z - 6), n.z - 6); g.npcs[0].brain.alarm(g.player.pos); } },
   // ciel : la caméra regarde vers le soleil (derrière le joueur, à droite) ; puis vers les nuages, vers l'horizon
+  // convoi de blindés et lance-missiles en embuscade : le joueur se tient près de la piste, à l'ouest de la première embuscade
+  convoi_vue: { frames: 60, expect: 'Rifle Aim', hostile: true, setup: (g) => { const x = -150, z = 100; g.player.pos.set(x, g.world.groundY(x, z), z); g.look(1.5, 0.12); } },
   ciel_soleil: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(-2.2, 0.5); } },
   ciel_nuages: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(0.5, 0.55); } },
   ciel_horizon: { frames: 40, expect: 'Rifle Aim', setup: (g) => { g.look(0, 0.12); } },
@@ -269,7 +270,7 @@ const SCENARIOS = {
                  setup: (g) => { g.npcs.slice(1).forEach((n) => g.skirmish.hurtNpc(n, 999, 'test')); const n = g.npcs[0].player.pos; g.player.pos.set(n.x, g.world.groundY(n.x, n.z - 12), n.z - 12); g.npcs[0].brain.alarm(g.player.pos); } },
   // tout le monde : 18 miliciens chargés, ceux qui sont loin dorment ; en allant au fort, ceux du fort se réveillent (et sont affichés)
   monde_eveil: { frames: 40, hostile: true,
-                 check: (g) => g.npcs.length === 18 && g.allies.length === 3
+                 check: (g) => g.npcs.length === 21 && g.allies.length === 3
                    && g.npcs.filter((n) => n._asleep && !n.player.root.visible).length >= 12
                    && g.npcs.filter((n) => !n._asleep && n.player.root.visible && n.def.zone === 'fort').length === 3,
                  setup: async (g) => { await g.spawnAllies(); const p = g.player.pos; p.set(-150, g.world.groundY(-150, -171), -171); } },
@@ -325,9 +326,9 @@ const SCENARIOS = {
                 check: (g) => g.camera.position.y >= g.world.groundY(g.camera.position.x, g.camera.position.z) + 0.29 },
   // mission : quand le dernier milicien tombe, « mission accomplie » s'affiche, avec le bilan de l'escouade
   mission_victoire: { frames: 40, setup: async (g) => { await g.spawnAllies(); for (const n of g.npcs) g.skirmish.hurtNpc(n, 999, 'test'); },
-                      check: (g) => g.mission.won && /ACCOMPLIE/.test(g.hud.bannerEl.textContent) && /Miliciens : 3 \/ 3/.test(g.hud.missionEl.textContent) && /Escouade : 3 \/ 3/.test(g.hud.missionEl.textContent) && /au complet/.test(g.hud.bannerEl.textContent) },
+                      check: (g) => g.mission.won && /ACCOMPLIE/.test(g.hud.bannerEl.textContent) && new RegExp(`Miliciens : ${g.npcs.length} / ${g.npcs.length}`).test(g.hud.missionEl.textContent) && /Escouade : 3 \/ 3/.test(g.hud.missionEl.textContent) && /au complet/.test(g.hud.bannerEl.textContent) },
   mission_en_cours: { frames: 30, setup: (g) => { g.skirmish.hurtNpc(g.npcs[0], 999, 'test'); },
-                      check: (g) => !g.mission.won && /Miliciens : 1 \/ 3/.test(g.hud.missionEl.textContent) && g.hud.bannerEl.textContent === '' },
+                      check: (g) => !g.mission.won && new RegExp(`Miliciens : 1 / ${g.npcs.length}`).test(g.hud.missionEl.textContent) && g.hud.bannerEl.textContent === '' },
   // mesures : hauteur de la tête et du buste au-dessus du sol, debout et à genoux (pour placer les caméras)
   mesure_debout: { frames: 70, setup: (g) => { g.player.sniperLatched = true; }, check: (g) => { logMesure(g, 'debout'); return true; } },
   mesure_genou: { frames: 70, setup: (g) => { g.player.state.crouch = true; g.player.sniperLatched = true; }, check: (g) => { logMesure(g, 'genou'); return true; } },

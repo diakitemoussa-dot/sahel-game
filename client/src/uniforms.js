@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ASSET_VERSION } from './version.js';
+import { addFlagPatches } from './flagpatch.js';
 
 /** Vérifie la configuration et la renvoie normalisée. Lance une erreur claire si elle est incohérente. */
 export function parseLibrary(json) {
@@ -16,7 +17,7 @@ export function parseLibrary(json) {
     if (ids.has(u.id)) throw new Error(`uniforms.json : tenue en double (${u.id})`);
     ids.add(u.id);
     if (u.file && !u.file.endsWith('.glb')) throw new Error(`uniforms.json : ${u.id} doit pointer vers un .glb`);
-    return { id: u.id, name: u.name, description: u.description ?? '', file: u.file ?? null, hide: u.hide ?? [], menu: u.menu !== false };
+    return { id: u.id, name: u.name, description: u.description ?? '', file: u.file ?? null, hide: u.hide ?? [], menu: u.menu !== false, flag: u.flag !== false };
   });
   const def = json.default ?? uniforms[0].id;
   if (!ids.has(def)) throw new Error(`uniforms.json : tenue par défaut inconnue (${def})`);
@@ -98,6 +99,7 @@ export class Outfit {
   async apply(id) {
     const entry = pickUniform(this.lib, id);
     const seq = ++this._seq;
+    if (entry.flag && !this._patches) this._patches = addFlagPatches(this.player);      // écusson du Mali sur les deux épaules (sauf tenues avec "flag": false, comme les miliciens)
     const group = entry.file ? (this.groups.get(entry.id) ?? await this._load(entry)) : null;
     if (seq !== this._seq) return this.current;
     for (const g of this.groups.values()) g.visible = false;

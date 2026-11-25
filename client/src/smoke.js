@@ -233,9 +233,9 @@ export class SmokeSystem {
       const a = R() * 6.283, sp = (8 + R() * 8) * s;
       S.spawn(pos.x, pos.y + 0.6, pos.z, Math.cos(a) * sp, 0.5 + R() * 2, Math.sin(a) * sp, 3 + R() * 2, 2.5 * s, (10 + R() * 5) * s, 0.55, { drag: 1.3, tone: 0.9, hot: 0 });
     }
-    this.flash = { t: 0, pos: { x: pos.x, y: pos.y + 3, z: pos.z }, power: 700 * s };
+    this.flash = { t: 0, pos: { x: pos.x, y: pos.y + 3, z: pos.z }, power: 560 * s };               // éclair un peu moins violent
     const d = Math.hypot(pos.x - this.camera.position.x, pos.z - this.camera.position.z);
-    this.shake = Math.max(this.shake, Math.max(0, 1 - d / 150) * Math.min(1.2, s));
+    this.shake = Math.max(this.shake, Math.max(0, 1 - d / 150) * Math.min(1.2, s) * 0.7);         // secousse un peu plus douce
     if (!this._quiet) this.onExplosion?.(pos, s);
     for (const s of this.sites) if (!s.temp && Math.hypot(s.x - pos.x, s.z - pos.z) < 30) this.ignite(s);       // la frappe rallume les foyers voisins : la situation empire
     this.addSite({ id: `impact_${this.explosions}`, x: pos.x, z: pos.z, y: pos.y, kind: 'column', temp: true, life: 70 + R() * 30, scale: 0.9 + R() * 0.3, fireSize: 2.4 });

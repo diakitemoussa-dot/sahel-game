@@ -1,6 +1,6 @@
 // Munitions : un chargeur par arme (fusil, pistolet). Quand il est vide, le personnage recharge (animation de recharge) ;
 // pendant la recharge on ne peut pas tirer. Logique pure, testée sans navigateur.
-export const MAG_SIZE = { rifle: 30, pistol: 12 };
+export const MAG_SIZE = { rifle: 50, pistol: 12 };           // chargeur du fusil : 50 balles (30 au début)
 export const RELOAD_CLIP = { rifle: 'Rifle Reload', pistol: 'Pistol Reload' };
 
 export class Ammo {

@@ -6,25 +6,25 @@
 
 export const PROFILES = {
   desktop: {
-    name: 'desktop', maxPixelRatio: 2, antialias: true, powerPreference: 'high-performance',
+    name: 'desktop', maxPixelRatio: 1.75, antialias: true, powerPreference: 'high-performance',
     shadowMap: 2048, shadowExtent: 30,                      // taille de la carte d'ombre (0 = pas d'ombre) et zone couverte autour du joueur (m)
     smoke: { rate: 1, burst: 1, size: 1, trail: 1 },        // fumée : cadence, éclats d'explosion, taille des nuages, espacement des traînées d'avion
     fpsCap: 0,                                              // 0 = pas de plafond
-    war: 1,                                                 // intensité de la guerre de fond (combats lointains, obus, rafales) : 1 = tout
+    war: 0.65,                                              // intensité de la guerre de fond (combats lointains, obus, rafales) : 1 = tout (réduit d'un cran : 0,65)
   },
   mobile: {
     name: 'mobile', maxPixelRatio: 1.5, antialias: false, powerPreference: 'default',
     shadowMap: 1024, shadowExtent: 22,
     smoke: { rate: 0.55, burst: 0.6, size: 1.1, trail: 2 },
     fpsCap: 30,
-    war: 0.6,
+    war: 0.45,
   },
   mobile_low: {
     name: 'mobile_low', maxPixelRatio: 1.25, antialias: false, powerPreference: 'default',
     shadowMap: 0, shadowExtent: 22,
     smoke: { rate: 0.4, burst: 0.45, size: 1.15, trail: 3 },
     fpsCap: 30,
-    war: 0.4,
+    war: 0.3,
   },
 };
 

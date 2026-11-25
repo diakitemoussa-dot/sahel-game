@@ -39,6 +39,20 @@ function charred(mat) {
   return m;
 }
 
+/** Matériaux métalliques adoucis : sans carte d'environnement, un métal à 100 % sort noir. Un matériau sans nom (face sans matériau dans Blender) prend la couleur `fallback`. */
+function softenMetal(root, fallback = 0xc4a061) {
+  const seen = new Set();
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) {
+      if (seen.has(m)) continue;
+      seen.add(m);
+      if (!m.name) { m.color?.setHex(fallback); m.metalness = 0; m.roughness = 0.8; }
+      else if ('metalness' in m) { m.roughness = Math.max(m.roughness, 0.55); m.metalness = Math.min(m.metalness, 0.18); if (m.color) m.color.multiplyScalar(1.5); }
+    }
+  });
+}
+
 /** Charge et pose les décors. Un décor qui ne se charge pas est ignoré (le jeu démarre quand même). */
 export async function loadProps(scene, world) {
   const r = await fetch(`config/props.json?v=${ASSET_VERSION}`);
@@ -51,6 +65,7 @@ export async function loadProps(scene, world) {
       const gltf = await loader.loadAsync(`${def.file}?v=${ASSET_VERSION}`);
       const root = gltf.scene;
       root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (def.burnt) o.material = charred(o.material); } });
+      if (def.softMetal) softenMetal(root);
       const [bx, by] = def.pos, x = bx, z = -by;
       const h = (a, b) => world.groundY(a, b);
       // posé sur le sol (hauteur au centre) et incliné selon la pente
@@ -64,13 +79,13 @@ export async function loadProps(scene, world) {
       root.updateMatrixWorld(true);
       // collisions : la maille du véhicule (enveloppes de ses pièces) posée là où il est : on peut monter sur le capot, le toit, la plateau.
       // Sans maillage (fichier absent), on retombe sur la boîte 2D.
-      let col = null;
+      let col = null, colGeo = null, colHandle = null;
       if (def.collision && world.mesh) {
         const rr = await fetch(`${def.collision}?v=${ASSET_VERSION}`);
-        if (rr.ok) world.addCollision(decodeSCOL(await rr.arrayBuffer()), root.matrixWorld.elements);
+        if (rr.ok) { colGeo = decodeSCOL(await rr.arrayBuffer()); colHandle = world.addCollision(colGeo, root.matrixWorld.elements); }       // gardés : un véhicule qui roule retire puis repose sa collision
       }
       if (!world.mesh || !def.collision) { col = colliderFor(def); if (col) world.colliders.push(col); }
-      out.push({ def, root, collider: col, nodes: (name) => root.getObjectByName(name) });
+      out.push({ def, root, collider: col, colGeo, colHandle, anims: gltf.animations, nodes: (name) => root.getObjectByName(name) });
     } catch (e) { console.error(`décor ${def.id} non chargé`, e); }
   }
   return out;

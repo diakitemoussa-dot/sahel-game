@@ -12,10 +12,12 @@ export const STEP = 0.45;                                       // hauteur qu'un
 
 /** API du monde (sol, collisions, lignes de vue). mesh : collisions sur maillage de tous les objets (assets/collision.bin) ;
  *  sans lui, on retombe sur les anciennes boîtes et cercles 2D (colliders). Coordonnées de jeu : celles de three.js (Y en haut). */
-export function createWorldApi({ hm, colliders, cams, spawns, mesh = null }) {
-  const groundY = (x, z) => sampleHeight(hm, x, -z);          // three (x, z) -> Blender (x, -z)
+export function createWorldApi({ hm, colliders, cams, spawns, mesh = null, groundMeshes = [] }) {
+  const dynamic = [];                                           // obstacles mobiles (blindés du convoi) : boîtes { t:'b', x, y, hx, hy, yaw } en repère Blender, mises à jour par leur propriétaire
+  const patches = [];                                          // corrections locales du sol (par exemple une piste posée sur le sable : on marche sur elle, pas dedans)
+  const groundY = (x, z) => { let h = sampleHeight(hm, x, -z); for (const p of patches) h += p(x, z); return h; };          // three (x, z) -> Blender (x, -z)
   const api = {
-    hm, colliders, cams, spawns, groundY, mesh,
+    hm, colliders, cams, spawns, groundY, mesh, groundMeshes, addGroundPatch: (fn) => patches.push(fn),         // groundMeshes : les dalles du sable (Sol_Desert, Sol_Desert_1...), pour poser des décors exactement dessus
     /** position d'apparition d'un joueur en coordonnées three.js */
     spawn(name) { const s = spawns[name] || [0, 0, 0]; return new THREE.Vector3(s[0], s[2], -s[1]); },
     /** hauteur sur laquelle se tient un personnage dont les pieds sont à feetY : le sol, ou le dessus d'un objet qu'il peut enjamber (à moins de STEP) */
@@ -27,6 +29,7 @@ export function createWorldApi({ hm, colliders, cams, spawns, mesh = null }) {
     },
     /** repousse la position (three.js, pieds en p.y) hors des obstacles : parois des objets sur toute la hauteur du personnage */
     collide(p, radius = 0.4) {
+      if (dynamic.length) { const d = { x: p.x, y: -p.z }; pushOut(d, radius, dynamic); p.x = d.x; p.z = -d.y; }
       if (mesh) { mesh.pushOut(p, radius); return; }
       const q = { x: p.x, y: -p.z };
       pushOut(q, radius, colliders);
@@ -39,7 +42,9 @@ export function createWorldApi({ hm, colliders, cams, spawns, mesh = null }) {
     /** rebord à portée de main devant un personnage (double saut : il grimpe dessus) : { x, y, z } ou null */
     findLedge(pos, dir) { return mesh ? mesh.findLedge(pos, dir) : null; },
     /** ajoute des objets (par exemple un véhicule posé dans le monde) aux collisions */
-    addCollision(geo, matrix) { if (mesh) mesh.add(geo, matrix); },
+    addCollision(geo, matrix) { if (!mesh) return null; mesh.add(geo, matrix); return mesh.lastAdd; },        // renvoie de quoi le retirer
+    removeCollision(handle) { if (mesh) mesh.remove(handle); },
+    addDynamic(box) { dynamic.push(box); return box; },
     /** premier point où le rayon touche le sol ou un objet, sinon le point à `max` mètres */
     rayGround(origin, dir, max = 120) {
       const p = new THREE.Vector3();
@@ -68,9 +73,9 @@ export async function loadWorld(scene) {
     if (!o.isMesh) return;
     o.receiveShadow = true; o.castShadow = false;
     // textures du sable : nettes aussi quand on regarde le sol en biais (limité par la carte graphique)
-    for (const m of [].concat(o.material)) for (const t of [m.map, m.normalMap]) if (t) t.anisotropy = 16;
+    for (const m of [].concat(o.material)) for (const t of [m.map, m.normalMap]) if (t) t.anisotropy = 8;
   });
   scene.add(gltf.scene);
   if (!mesh) console.warn('collision.bin introuvable : collisions 2D de secours');
-  return createWorldApi({ hm, colliders, cams, spawns, mesh });
+  return createWorldApi({ hm, colliders, cams, spawns, mesh, groundMeshes: (() => { const l = []; gltf.scene.traverse((o) => { if (o.isMesh && /^Sol_Desert/.test(o.name)) l.push(o); }); return l; })() });
 }

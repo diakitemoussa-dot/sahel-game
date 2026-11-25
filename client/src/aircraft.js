@@ -78,10 +78,12 @@ const HELI_ORBITS = [
 export class AirTraffic {
   /** opts : { sfx, smoke (traînées de condensation), enabled, passes (passages d'avions automatiques), orbits } */
   constructor(scene, camera, world, { sfx = null, smoke = null, enabled = true, passes = true, orbits = HELI_ORBITS } = {}) {
+    this.targetPicker = null;                                                   // (joueur, cap) -> { x, z } : où les avions tirent (les miliciens) ; null : foyers habituels
+    this.supportAt = -1e9;
     this.scene = scene; this.camera = camera; this.world = world; this.sfx = sfx; this.smoke = smoke;
     this.enabled = enabled; this.autoPasses = passes; this.time = 0; this.audible = true;
     this.helis = []; this.passes = []; this.jetsFlown = 0;
-    this.scheduler = new StrikeScheduler({ first: 10, min: 30, max: 58 });
+    this.scheduler = new StrikeScheduler({ first: 25, min: 45, max: 90 });                // passages moins fréquents (avant : 10 / 30-58 s)
     this.strikes = true; this.strikesFired = 0;                                  // les frappes (missiles) partent des avions de chasse
     if (enabled) for (const o of orbits) this._addHeli(o);
   }
@@ -103,16 +105,24 @@ export class AirTraffic {
   }
 
   /** Lance un passage de deux avions de chasse devant le joueur. Renvoie le passage. */
-  launchPass(player, heading) {
-    const plan = planPass(player, heading);
+  launchPass(player, heading, target = null) {
+    const plan = target ? planPass(target, Math.random() * Math.PI * 2, Math.random, { ahead: 0, side: 0 }) : planPass(player, heading);        // à l'appui : le passage survole la cible
     const jets = [0, 1].map((i) => {
       const m = buildJet(); m.group.rotation.order = 'YXZ'; m.group.visible = false; this.scene.add(m.group);
       return { ...m, off: i === 0 ? { along: 0, lat: 0, up: 0 } : { along: -26, lat: 22, up: 5 } };    // l'ailier est un peu derrière et sur le côté
     });
     const shots = [{ jet: 0, at: plan.dur * 0.3 }, { jet: 1, at: plan.dur * 0.3 + 0.8 }];       // chaque avion tire un missile (le 2e avion 0,8 s après le 1er)
-    const pass = { plan, t: 0, shots, jets, voice: this.sfx?.voice('jet') ?? null, trail: 0, pos: { x: plan.from.x, z: plan.from.z }, y: this.world.groundY(player.x, player.z) + plan.alt };
+    const pass = { plan, target, t: 0, shots, jets, voice: this.sfx?.voice('jet') ?? null, trail: 0, pos: { x: plan.from.x, z: plan.from.z }, y: this.world.groundY(player.x, player.z) + plan.alt };
     this.passes.push(pass); this.jetsFlown += 2;
     return pass;
+  }
+
+  /** Les avions se rabattent sur `target` ({ x, z }) : un passage qui survole la cible et tire dessus. Au plus un appui toutes les 30 s ; renvoie vrai s'il part. */
+  callSupport(target) {
+    if (!this.enabled || !this.strikes || !this.smoke?.enabled || this.time - this.supportAt < 30 || this.passes.length > 1) return false;
+    this.supportAt = this.time;
+    this.launchPass(target, 0, { x: target.x, z: target.z });
+    return true;
   }
 
   setAudible(on) { this.audible = on; if (!on) { for (const h of this.helis) h.voice?.update(null, null, 0); for (const p of this.passes) p.voice?.update(null, null, 0); } }
@@ -148,8 +158,10 @@ export class AirTraffic {
         if (sh.done || p.t < sh.at) continue;
         sh.done = true;
         if (!this.strikes || !this.smoke?.enabled) continue;
-        const w = p.jets[sh.jet].group.position;
-        if (this.smoke.strike(player, heading, { x: w.x, y: w.y - 1, z: w.z })) this.strikesFired++;
+        const w = p.jets[sh.jet].group.position, origin = { x: w.x, y: w.y - 1, z: w.z };
+        const aim = p.target ?? this.targetPicker?.(player, heading);                                  // les miliciens d'abord
+        if (aim) { this.smoke.launchMissile({ x: aim.x + (Math.random() - 0.5) * 5, z: aim.z + (Math.random() - 0.5) * 5 }, 3.4, origin); this.strikesFired++; }
+        else if (this.smoke.strike(player, heading, origin)) this.strikesFired++;
       }
       p.voice?.update({ x: lead.x, y: p.y, z: lead.z }, { x: plan.dir.x * plan.speed, z: plan.dir.z * plan.speed }, this.audible ? 1 : 0);
       if (this.smoke?.enabled) {                                                                       // traînées blanches derrière les tuyères

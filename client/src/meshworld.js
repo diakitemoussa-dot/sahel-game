@@ -81,6 +81,21 @@ export class MeshWorld {
     }
     this.nObj = base + maxObj + 1;
     this.dirty = true;
+    this.lastAdd = { base, n: maxObj + 1 };           // pour retirer ce que l'on vient d'ajouter (un véhicule qui roule)
+    return this;
+  }
+
+  /** Retire les triangles d'un ajout précédent (handle : this.lastAdd juste après add). */
+  remove(handle) {
+    if (!handle) return this;
+    const keepTv = [], keepObj = [];
+    for (let t = 0; t < this.objIds.length; t++) {
+      const o = this.objIds[t];
+      if (o >= handle.base && o < handle.base + handle.n) continue;
+      for (let k = 0; k < 9; k++) keepTv.push(this.tv[t * 9 + k]);
+      keepObj.push(o);
+    }
+    this.tv = keepTv; this.objIds = keepObj; this.dirty = true;
     return this;
   }
 

@@ -86,3 +86,5 @@ body.gm-menu #pbtn { display: none; }
   .gm-panel input[type=range] { width: 130px; }
   .gm-btn { padding: 13px 18px; font-size: 16px; }
 }
+
+.gm-why { margin: 0 0 10px; text-align: center; font-size: 14px; color: #f0d9a0; min-height: 1.2em; }

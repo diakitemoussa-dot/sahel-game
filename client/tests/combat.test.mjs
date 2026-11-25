@@ -15,7 +15,7 @@ test('points de vie : dégâts, mort, coup fatal signalé une seule fois', () =>
 
 test('équilibrage : un PNJ tombe en 4 balles de fusil ; le joueur résiste à 20 balles', () => {
   assert.equal(Math.ceil(100 / PLAYER_DAMAGE.rifle), 4);
-  assert.equal(Math.ceil(100 / NPC_DAMAGE.rifle), 17);
+  assert.equal(Math.ceil(100 / NPC_DAMAGE.rifle), 20);
   for (const k of Object.keys(MELEE_DELAY)) assert.ok(PLAYER_DAMAGE[k] > 0, `dégâts du coup ${k}`);
 });
 
