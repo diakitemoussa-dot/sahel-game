@@ -37,7 +37,9 @@ export class Input {
       if (e.button === 2) this.mouse.right = false;
     });
     addEventListener('contextmenu', (e) => e.preventDefault());
-    if (this.isTouch) this._buildTouchUI();
+    // boutons tactiles : sur téléphone/tablette, ou dans une fenêtre réduite (ils se cliquent alors à la souris)
+    this.touchUi = this.isTouch || matchMedia('(max-width: 820px), (max-height: 560px)').matches;
+    if (this.touchUi) this._buildTouchUI();
   }
 
   _buildTouchUI() {
@@ -53,6 +55,10 @@ export class Input {
       knob.style.left = 45 + dx * 45 + 'px'; knob.style.top = 45 + dy * 45 + 'px';
     };
     let stickId = null;
+    // à la souris (fenêtre réduite sur ordinateur) : cliquer-glisser dans le stick
+    stick.addEventListener('mousedown', (e) => { stickId = 'mouse'; setStick(e); e.preventDefault(); });
+    addEventListener('mousemove', (e) => { if (stickId === 'mouse') setStick(e); });
+    addEventListener('mouseup', () => { if (stickId === 'mouse') { stickId = null; this.t.move.x = 0; this.t.move.y = 0; knob.style.left = '45px'; knob.style.top = '45px'; } });
     stick.addEventListener('touchstart', (e) => { stickId = e.changedTouches[0].identifier; setStick(e.changedTouches[0]); e.preventDefault(); }, { passive: false });
     stick.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === stickId) setStick(t); e.preventDefault(); }, { passive: false });
     const endStick = (e) => { for (const t of e.changedTouches) if (t.identifier === stickId) {
@@ -72,7 +78,8 @@ export class Input {
       const b = document.createElement('div'); b.className = 'tbtn'; b.textContent = label;
       b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; document.body.appendChild(b);
       b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
-      if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); }
+      b.addEventListener('mousedown', (e) => { this.t[key] = true; e.preventDefault(); e.stopPropagation(); });
+      if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); addEventListener('mouseup', up); }
     };
     // boutons à droite (le stick de déplacement reste à gauche) : 3 rangées de 3
     btn('TIR', 16, 16, true, 'fire');
@@ -130,7 +137,7 @@ export class Input {
       this.padPrev = [];
     }
     const nav = this.padNav.update(pad, performance.now());    // croix / A / B / Start pour le menu du jeu
-    if (this.isTouch) {
+    if (this.touchUi) {
       mx += this.t.move.x; my += this.t.move.y;
       lookX += this.t.lookX * 0.004; lookY += this.t.lookY * 0.004; this.t.lookX = 0; this.t.lookY = 0;
       fire = fire || this.t.fire; aim = aim || this.t.aim;
