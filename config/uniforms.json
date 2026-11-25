@@ -1,0 +1,67 @@
+{
+  "default": "militaire",
+  "uniforms": [
+    {
+      "id": "militaire",
+      "name": "Militaire noir",
+      "description": "Tenue entièrement noire : treillis, gilet, casque, cagoule, gants, genouillères, bottes",
+      "file": "assets/uniforms/militaire.glb",
+      "hide": [
+        "Hoodie",
+        "Pants",
+        "Shoes",
+        "Hair_Twists"
+      ]
+    },
+    {
+      "id": "militaire_camo",
+      "name": "Militaire camouflage",
+      "description": "Treillis camouflage sable, vert et brun, gilet, casque, cagoule, genouillères, bottes",
+      "file": "assets/uniforms/militaire_camo.glb",
+      "hide": [
+        "Hoodie",
+        "Pants",
+        "Shoes",
+        "Hair_Twists"
+      ]
+    },
+    {
+      "id": "militaire_sable",
+      "name": "Militaire sable",
+      "description": "Treillis uni sable, gilet, casque, cagoule, genouillères, bottes",
+      "file": "assets/uniforms/militaire_sable.glb",
+      "hide": [
+        "Hoodie",
+        "Pants",
+        "Shoes",
+        "Hair_Twists"
+      ]
+    },
+    {
+      "id": "militaire_roux",
+      "name": "Militaire brun roux",
+      "description": "Treillis uni brun roux, gilet, casque, cagoule, genouillères, bottes",
+      "file": "assets/uniforms/militaire_roux.glb",
+      "hide": [
+        "Hoodie",
+        "Pants",
+        "Shoes",
+        "Hair_Twists"
+      ]
+    },
+    {
+      "id": "pnj_milicien",
+      "name": "Milicien du désert",
+      "description": "Tenue des PNJ (pas dans le menu du joueur) : foulard kaki, masque noir, tunique indigo, gilet olive, cuir",
+      "file": "assets/uniforms/pnj_milicien.glb",
+      "hide": [
+        "Hoodie",
+        "Pants",
+        "Shoes",
+        "Hair_Twists"
+      ],
+      "menu": false,
+      "flag": false
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "props": [
+    {
+      "id": "technique_1",
+      "name": "Technical (pick-up armé)",
+      "file": "assets/vehicles/technique.glb",
+      "pos": [
+        -204,
+        -174
+      ],
+      "yaw": 0,
+      "collider": {
+        "hx": 1.05,
+        "hy": 2.9,
+        "dx": 0,
+        "dy": 0.18
+      },
+      "collision": "assets/vehicles/technique_collision.bin"
+    },
+    {
+      "id": "technique_brule_1",
+      "name": "Technical en feu (épave)",
+      "file": "assets/vehicles/technique.glb",
+      "pos": [
+        -56,
+        -127
+      ],
+      "yaw": 0.6,
+      "collider": {
+        "hx": 1.05,
+        "hy": 2.9,
+        "dx": 0,
+        "dy": 0.18
+      },
+      "collision": "assets/vehicles/technique_collision.bin",
+      "burnt": true,
+      "smoke": {
+        "kind": "car",
+        "scale": 1.0,
+        "start": 0.6
+      }
+    },
+    {
+      "id": "technique_brule_2",
+      "name": "Technical en feu (épave)",
+      "file": "assets/vehicles/technique.glb",
+      "pos": [
+        4,
+        -77
+      ],
+      "yaw": 2.3,
+      "collider": {
+        "hx": 1.05,
+        "hy": 2.9,
+        "dx": 0,
+        "dy": 0.18
+      },
+      "collision": "assets/vehicles/technique_collision.bin",
+      "burnt": true,
+      "smoke": {
+        "kind": "car",
+        "scale": 1.0,
+        "start": 0
+      }
+    },
+    {
+      "id": "technique_brule_3",
+      "name": "Technical en feu (épave)",
+      "file": "assets/vehicles/technique.glb",
+      "pos": [
+        144,
+        173
+      ],
+      "yaw": -0.8,
+      "collider": {
+        "hx": 1.05,
+        "hy": 2.9,
+        "dx": 0,
+        "dy": 0.18
+      },
+      "collision": "assets/vehicles/technique_collision.bin",
+      "burnt": true,
+      "smoke": {
+        "kind": "car",
+        "scale": 1.0,
+        "start": 0
+      }
+    }
+  ]
+}

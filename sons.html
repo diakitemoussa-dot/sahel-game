@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sahel Game - test des sons</title>
+<style>
+  body { margin: 0; padding: 24px; background: #14100b; color: #f3e7d0; font-family: "Segoe UI", system-ui, sans-serif; }
+  h1 { letter-spacing: .2em; font-size: 22px; color: #ffe2aa; } h2 { margin: 22px 0 8px; font-size: 14px; letter-spacing: .2em; color: #d9a65a; }
+  button { font: inherit; margin: 4px; padding: 10px 16px; border: 1px solid rgba(255,210,140,.5); border-radius: 4px; background: rgba(255,190,90,.1); color: inherit; cursor: pointer; }
+  button:hover { background: rgba(255,190,90,.3); }
+  label { display: inline-flex; align-items: center; gap: 8px; margin-right: 18px; } .row { margin: 10px 0; }
+</style></head><body>
+<h1>TEST DES SONS</h1>
+<div class="row"><label>Volume <input id="vol" type="range" min="0" max="100" value="80"></label>
+<label>Distance <input id="dist" type="range" min="0" max="130" value="0"> <b id="dv">0 m</b></label>
+<label>Côté (gauche / droite) <input id="side" type="range" min="-100" max="100" value="0"></label>
+<button id="wind">🌬 Vent</button> <button id="heli">🚁 Hélicoptère (en rond)</button> <button id="jet">✈ Avion qui passe (8 s)</button></div>
+<div id="list"></div>
+<script type="module">
+import { Sfx } from './src/sfx.js';
+import { SOUND_NAMES } from './src/sfxsynth.js';
+const GROUPS = { 'Armes': ['rifle', 'pistol', 'whiz', 'impact_dust', 'impact_flesh', 'reload_rifle', 'reload_pistol', 'switch'], 'Joueur': ['hurt', 'death', 'step', 'land', 'punch', 'kick'],
+  'Champ de bataille': ['explosion', 'missile', 'crackle'], 'Retours': ['hit_tick', 'kill'], 'Menu': ['ui_move', 'ui_ok', 'ui_back', 'ui_start'] };
+const sfx = new Sfx({ volume: 0.8 }); window.sfx = sfx;
+const $ = (id) => document.getElementById(id);
+const list = $('list');
+for (const [g, names] of Object.entries(GROUPS)) {
+  list.insertAdjacentHTML('beforeend', `<h2>${g.toUpperCase()}</h2>` + names.filter((n) => SOUND_NAMES.includes(n)).map((n) => `<button data-n="${n}">${n}</button>`).join(''));
+}
+list.addEventListener('click', (e) => {
+  const n = e.target.dataset?.n; if (!n) return;
+  const d = Number($('dist').value), side = Number($('side').value) / 100;
+  sfx.setListener({ x: 0, z: 0 }, 0);
+  sfx.play(n, d > 0 ? { pos: { x: side * d, z: Math.sqrt(Math.max(0, 1 - side * side)) * d } } : {});
+});
+$('vol').addEventListener('input', (e) => sfx.setVolume(e.target.value / 100));
+$('dist').addEventListener('input', (e) => { $('dv').textContent = `${e.target.value} m`; });
+// voix continues : hélicoptère qui tourne autour de l'écouteur, avion qui le traverse de gauche à droite (effet Doppler)
+let heli = null, jet = null, tj = 0, th = 0, tick = null;
+function loop() {
+  if (!heli && !jet) { clearInterval(tick); tick = null; return; }
+  sfx.setListener({ x: 0, z: 0 }, 0);
+  if (heli) { th += 0.05; const a = th * 0.3; heli.update({ x: Math.cos(a) * 70, z: Math.sin(a) * 70 }, { x: -Math.sin(a) * 20, z: Math.cos(a) * 20 }, 1); }
+  if (jet) { tj += 0.05; const x = -550 + 150 * tj; jet.update({ x, z: 90 }, { x: 150, z: 0 }, 1); if (tj > 8) { jet.stop(); jet = null; } }
+}
+$('heli').addEventListener('click', () => { sfx.unlock(); if (heli) { heli.stop(); heli = null; } else heli = sfx.voice('heli'); if (!tick) tick = setInterval(loop, 50); });
+$('jet').addEventListener('click', () => { sfx.unlock(); if (jet) jet.stop(); jet = sfx.voice('jet'); tj = 0; if (!tick) tick = setInterval(loop, 50); });
+let wind = false; $('wind').addEventListener('click', () => { wind = !wind; sfx.unlock(); sfx.setAmbient(wind); });
+</script></body></html>

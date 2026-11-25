@@ -1,0 +1,65 @@
+{
+  "sites": [
+    {
+      "id": "fumee_sud_proche",
+      "name": "Foyer au sud, près du départ",
+      "pos": [
+        -120,
+        -150
+      ],
+      "kind": "column",
+      "scale": 1.0,
+      "start": 0.55
+    },
+    {
+      "id": "fumee_milieu1",
+      "pos": [
+        -52,
+        9
+      ],
+      "kind": "column",
+      "scale": 1.1,
+      "start": 0
+    },
+    {
+      "id": "fumee_milieu2",
+      "pos": [
+        64,
+        43
+      ],
+      "kind": "column",
+      "scale": 1.0,
+      "start": 0
+    },
+    {
+      "id": "fumee_nord",
+      "pos": [
+        8,
+        129
+      ],
+      "kind": "column",
+      "scale": 0.9,
+      "start": 0
+    },
+    {
+      "id": "fumee_oasis",
+      "pos": [
+        172,
+        -115
+      ],
+      "kind": "column",
+      "scale": 1.2,
+      "start": 0
+    },
+    {
+      "id": "fumee_fort",
+      "pos": [
+        -146,
+        160
+      ],
+      "kind": "column",
+      "scale": 1.0,
+      "start": 0
+    }
+  ]
+}
