@@ -92,12 +92,12 @@ export class Input {
       if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); addEventListener('mouseup', up); }
     };
     // boutons à droite (le stick de déplacement reste à gauche) : les commandes essentielles seulement
+    // TIR : on vise en le maintenant ; le tir part tout seul dès que le viseur est sur un milicien (géré dans main.js)
     btn('TIR', 16, 16, true, 'fire');
-    btn('VISER', 84, 16, true, 'aim');
-    btn('SAUT', 152, 16, false, 'jump');
-    btn('ARME', 16, 84, false, 'weapon');
-    btn('ACCROUPIR', 84, 84, false, 'crouch');
-    btn('RECHARGER', 152, 84, false, 'reload');
+    btn('SAUT', 84, 16, false, 'jump');
+    btn('ARME', 152, 16, false, 'weapon');
+    btn('ACCROUPIR', 16, 84, false, 'crouch');
+    btn('RECHARGER', 84, 84, false, 'reload');
   }
 
   poll() {
@@ -144,10 +144,12 @@ export class Input {
       this.padPrev = [];
     }
     const nav = this.padNav.update(pad, performance.now());    // croix / A / B / Start pour le menu du jeu
+    let autoFire = false;                                      // tactile : TIR tenu, le tir part seulement sur une cible
     if (this.touchUi) {
       mx += this.t.move.x; my += this.t.move.y;
       lookX += this.t.lookX * 0.004; lookY += this.t.lookY * 0.004; this.t.lookX = 0; this.t.lookY = 0;
-      fire = fire || this.t.fire; aim = aim || this.t.aim;
+      aim = aim || this.t.aim || this.t.fire;                 // TIR tenu = on vise ; le tir lui-même est décidé dans main.js (autoFire)
+      autoFire = this.t.fire;
       if (this.t.jump) { jump = true; this.t.jump = false; }
       if (this.t.crouch) { crouchToggle = true; this.t.crouch = false; }
       if (this.t.weapon) { toggleWeapon = true; this.t.weapon = false; }
@@ -159,6 +161,6 @@ export class Input {
     this.pressed.clear();
     return { moveX: mx, moveY: my, lookX, lookY, padLookX, padLookY, fire, aim, sprint, sniperHold, jump, crouchToggle, toggleWeapon, weapon, viewToggle, sniperToggle,
              reload, melee, combo, kick, wave, victory, hit, deadToggle, downedToggle,
-             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, ...this.override };
+             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, autoFire, ...this.override };
   }
 }

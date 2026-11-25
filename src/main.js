@@ -364,7 +364,11 @@ async function start() {
     const raw = input.poll();
     if (raw.nav?.start && !wardrobe.open && menu.pause('Bouton Start de la manette')) menu.hooks.onPause?.();          // Start de la manette : pause
     if (menu.flow.active) { renderer.render(scene, camera); requestAnimationFrame(frame); return; }
-    const inp = wardrobe.update(raw) ? { ...raw, ...NEUTRAL } : raw;
+    let inp = wardrobe.update(raw) ? { ...raw, ...NEUTRAL } : raw;
+    if (inp.autoFire) {                                         // bouton TIR tactile : tir seulement si le viseur est sur un milicien (la caméra de l'image précédente suffit)
+      const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3());
+      inp = { ...inp, fire: skirmish.targetInSight(o, d) };
+    }
     window.__game.lastInput = inp;
     if (!testing && (inp.sensUp || inp.sensDown)) {              // PageUp / PageDown : sensibilité du viseur
       sens = stepUser(sens, inp.sensUp ? 1 : -1); saveUser(localStorage, sens);
