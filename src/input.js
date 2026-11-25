@@ -10,13 +10,13 @@ export class Input {
     this.pressed = new Set();
     this.lookX = 0; this.lookY = 0;
     this.mouse = { left: false, right: false };
-    this.t = { move: { x: 0, y: 0 }, fire: false, aim: false, jump: false, crouch: false, weapon: false, wardrobe: false, lookX: 0, lookY: 0 };
+    this.t = { move: { x: 0, y: 0 }, fire: false, aim: false, jump: false, crouch: false, weapon: false, wardrobe: false, reload: false, sprint: false, melee: false, lookX: 0, lookY: 0 };
     this.padPrev = [];
     this.padHub = new PadHub();
     this.padNav = new PadNav();         // navigation des menus à la manette
     this.padStatus = [];               // une ligne par manette détectée, affichée dans l'aide à l'écran
     this.override = {};              // pour les tests automatiques : fusionné dans le résultat de poll()
-    this.isTouch = matchMedia('(pointer: coarse)').matches;
+    this.isTouch = matchMedia('(pointer: coarse)').matches || matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 0 || 'ontouchstart' in window;      // téléphone ou tablette : les boutons tactiles s'affichent
 
     addEventListener('keydown', (e) => { if (!e.repeat) this.pressed.add(e.code); this.keys.add(e.code); });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -74,12 +74,16 @@ export class Input {
       b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
       if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); }
     };
-    btn('TIR', 24, 24, true, 'fire');
-    btn('VISER', 100, 24, true, 'aim');
-    btn('SAUT', 24, 100, false, 'jump');
-    btn('ACCR.', 100, 100, false, 'crouch');
-    btn('ARME', 176, 24, false, 'weapon');
-    btn('TENUE', 176, 100, false, 'wardrobe');
+    // boutons à droite (le stick de déplacement reste à gauche) : 3 rangées de 3
+    btn('TIR', 16, 16, true, 'fire');
+    btn('VISER', 84, 16, true, 'aim');
+    btn('SAUT', 152, 16, false, 'jump');
+    btn('ARME', 16, 84, false, 'weapon');
+    btn('ACCR.', 84, 84, false, 'crouch');
+    btn('RECH.', 152, 84, false, 'reload');
+    btn('COURIR', 16, 152, true, 'sprint');
+    btn('MÊLÉE', 84, 152, false, 'melee');
+    btn('TENUE', 152, 152, false, 'wardrobe');
   }
 
   poll() {
@@ -92,7 +96,7 @@ export class Input {
     let jump = p('Space'), crouchToggle = p('KeyC'), toggleWeapon = p('KeyQ');
     let weapon = p('Digit1') ? 'rifle' : p('Digit2') ? 'pistol' : p('Digit3') ? 'none' : null;
     const viewToggle = p('KeyB'), sniperToggle = p('KeyT');
-    let reload = p('KeyR'); const melee = p('KeyV'), wave = p('KeyG'), victory = p('KeyK'), hit = p('KeyH');
+    let reload = p('KeyR'); let melee = p('KeyV'), wave = p('KeyG'), victory = p('KeyK'), hit = p('KeyH');
     const deadToggle = p('KeyM'), downedToggle = p('KeyN');
     let combo = p('KeyX');                                     // X : enchaîne toutes les animations de combat (Triangle sur la manette)
     let kick = p('KeyF');                                      // F : coups de pied seulement (pas de bouton séparé sur la manette)
@@ -134,6 +138,9 @@ export class Input {
       if (this.t.crouch) { crouchToggle = true; this.t.crouch = false; }
       if (this.t.weapon) { toggleWeapon = true; this.t.weapon = false; }
       if (this.t.wardrobe) { wardrobeToggle = true; this.t.wardrobe = false; }
+      if (this.t.reload) { reload = true; this.t.reload = false; }
+      if (this.t.melee) { melee = true; this.t.melee = false; }
+      sprint = sprint || this.t.sprint;
     }
     const n = Math.hypot(mx, my);
     if (n > 1) { mx /= n; my /= n; }

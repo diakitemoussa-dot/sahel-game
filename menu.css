@@ -105,7 +105,8 @@ body.gm-menu #pbtn { display: none; }
   #prompt { bottom: 30%; font-size: 14px; padding: 7px 14px; }
   #banner { top: 16%; }
   .tag { font-size: 10px; } .tag .th { max-width: 130px; font-size: 10px; }
-  .tbtn { width: 52px; height: 52px; font-size: 10px; }
+  .tbtn { width: 56px; height: 56px; font-size: 10px; }
+  #stick { z-index: 6; }
   .w-box { min-width: 0; width: 86vw; padding: 12px 14px; max-height: 92vh; overflow-y: auto; }
   .w-item { padding: 7px 10px; margin: 4px 0; }
   #wardrobe { width: 100%; }
