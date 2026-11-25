@@ -1,0 +1,20 @@
+{
+  "file": "assets/vehicles/blinde.glb",
+  "vehicles": [
+    { "id": "blinde_a", "pos": [-168, 176], "yaw": 1.5708 },
+    { "id": "blinde_b", "pos": [-168, 192], "yaw": 1.5708 }
+  ],
+  "reach": 7,
+  "seats": 3,
+  "box": [2.1, 5.0],
+  "radius": 1.9,
+  "sample": [2.8, 0, -2.4],
+  "wheels": { "front": 2.91, "rear": -1.69, "half": 1.72 },
+  "door": [0, -5.6],
+  "gunner": { "x": 0, "y": 2.45, "z": 0.5 },
+  "gunRange": 75,
+  "exit": [-3.4, 0.6],
+  "cam": { "dist": 13, "h": 4.4, "look": 2.0, "fov": 62 },
+  "boardCam": { "pos": [-6.5, 3.6, -11], "look": [0, 1.5, -4.2] },
+  "physics": { "maxSpeed": 17, "reverseMax": 5, "accel": 5, "brake": 11 }
+}

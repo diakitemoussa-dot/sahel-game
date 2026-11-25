@@ -17,6 +17,8 @@ import { BloodFx } from './blood.js';
 import { loadProps } from './props.js';
 import { loadRoads } from './road.js';
 import { loadConvoys } from './boarding.js';
+import { loadDrive } from './drive.js';
+import { setVehicleEnv, makeSkyEnv } from './vehiclefx.js';
 import { loadConvoy } from './convoy.js';
 import { lookScale, stepUser, loadUser, saveUser } from './sensitivity.js';
 import { GameMenu } from './menu.js';
@@ -48,6 +50,7 @@ const profileFor = (o) => (isTestRun && !urlPerf ? 'desktop' : resolveProfile(o.
 let perfName = profileFor(loadOptions(isTestRun ? null : localStorage));
 let perf = settingsFor(perfName);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: perf.antialias, powerPreference: perf.powerPreference });      // l'anti-aliasing se choisit à la création : il change au prochain lancement
+try { setVehicleEnv(makeSkyEnv(renderer)); } catch (e) { console.warn('reflet de ciel des véhicules indisponible', e); }      // les véhicules reflètent un peu le ciel (vehiclefx.js)
 renderer.setPixelRatio(Math.min(devicePixelRatio, perf.maxPixelRatio));
 renderer.shadowMap.enabled = true;
 // même tonalité que Blender (AgX) : sans elle le sable sort saturé et orange, et le relief s'écrase
@@ -247,10 +250,12 @@ async function start() {
   let convoy = null, roadPts = [], convoyBroken = false;                                                          // convoi de blindés qui roulent doucement ; des miliciens lance-missiles les visent (convoy.js, skirmish.js)
   if (!testing || /^convoi_/.test(scenario)) { try { convoy = await loadConvoy({ scene, world, smoke, hud }); if (convoy) { skirmish.convoy = convoy; roadPts = convoy.path.pts.filter((_, i) => i % 8 === 0).map((p) => ({ x: p[0], z: -p[1] })); } } catch (e) { console.error('convoi non chargé', e); } }
   const convoys = await loadConvoys(props, { player, getAllies: () => allies, world, hud, skirmish }).catch((e) => { console.error('blindés non chargés', e); return []; });
+  let drive = null, driveBroken = false;                                    // véhicules à conduire (drive.js) : on s'approche, « Entrer », les alliés montent, on roule
+  if (!testing || /^conduite_/.test(scenario)) { try { drive = await loadDrive({ scene, world, player, getAllies: () => allies, hud, skirmish }); } catch (e) { console.error('véhicules à conduire non chargés', e); } }
   wardrobe.addTeam(allies.map((a) => a.outfit).filter(Boolean));            // les alliés portent la tenue choisie par le joueur (et la changent avec lui)
   hud.hideMessage();
   menu.setLoaded();
-  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, convoys, convoy, governor, sky, dust, hud, muzzle, blood, props, allies,
+  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, convoys, convoy, drive, governor, sky, dust, hud, muzzle, blood, props, allies,
     spawnAllies: async () => { const a = await loadNpcs(scene, world, lib, npcDefs.allies, 'ally'); a.forEach((x) => { skirmish.addAlly(x); allies.push(x); }); await wardrobe.addTeam(a.map((x) => x.outfit).filter(Boolean)); return a; }, getYaw: () => yaw, look: (y, p) => { yaw = y; pitch = p; }, menu };     // accès pour les tests automatiques
   const auto = makeAutotest(new URLSearchParams(location.search).get('autotest'));
 
@@ -348,6 +353,7 @@ async function start() {
       if (frameErrors++ < 5) console.error('erreur dans la boucle du jeu (le jeu continue) :', e);
       if (frameErrors === 1) hud.toast('Un problème est survenu : le jeu continue', 3500);
       for (const c of convoys) c.abort?.(e);
+      drive?.abort(e);
       requestAnimationFrame(frame);
     }
   }
@@ -364,7 +370,11 @@ async function start() {
     const raw = input.poll();
     if (raw.nav?.start && !wardrobe.open && menu.pause('Bouton Start de la manette')) menu.hooks.onPause?.();          // Start de la manette : pause
     if (menu.flow.active) { renderer.render(scene, camera); requestAnimationFrame(frame); return; }
-    const inp = wardrobe.update(raw) ? { ...raw, ...NEUTRAL } : raw;
+    let inp = wardrobe.update(raw) ? { ...raw, ...NEUTRAL } : raw;
+    if (inp.autoFire) {                                         // bouton TIR tactile : tir seulement si le viseur est sur un milicien (la caméra de l'image précédente suffit)
+      const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3());
+      inp = { ...inp, fire: skirmish.targetInSight(o, d) };
+    }
     window.__game.lastInput = inp;
     if (!testing && (inp.sensUp || inp.sensDown)) {              // PageUp / PageDown : sensibilité du viseur
       sens = stepUser(sens, inp.sensUp ? 1 : -1); saveUser(localStorage, sens);
@@ -384,9 +394,18 @@ async function start() {
       try { r = c.update(dt, inp.interact); } catch (e) { console.error('blindé : erreur, tout le monde est libéré', e); c.abort(e); r = { control: false }; }
       if (r.control) bctl = r; if (r.cam) bcam = r.cam;
     }
+    let chase = null;                                           // conduite : la caméra de poursuite (drive.js) remplace la caméra du joueur à pied
+    if (drive && !driveBroken) {
+      try {
+        const r = drive.update(dt, inp, { blocked: wardrobe.open || convoys.some((c) => c.busy) });
+        if (r.control && !bctl) { bctl = { control: true, focus: player.pos }; chase = r.chase; }
+        if (r.yaw !== undefined) { yaw = r.yaw; pitch = 0.05; }                            // à la descente, la caméra se place derrière le joueur, qui regarde le blindé
+      } catch (e) { driveBroken = true; console.error('conduite : erreur, elle est arrêtée', e); drive.abort(e); }
+    }
     player.locked = convoys.some((c) => c.gunnerFree);          // tireur à la trappe : il garde ses commandes de tir mais ne marche pas
     if (!bctl) player.step(dt, inp, world, yaw);
     rig.update(dt, bctl ? bctl.focus : player.pos, yaw, pitch, bctl ? { ...player.state, crouch: false } : { ...player.state }, world);      // (accroupi : la caméra descend, sauf quand le blindé pilote le joueur)
+    if (chase) { camera.position.copy(chase.pos); camera.lookAt(chase.look); if (chase.fov) { camera.fov = chase.fov; camera.updateProjectionMatrix(); } }
     if (bcam) {                                                 // caméra de cinéma : fondu de la caméra du jeu vers un point de vue qui montre la porte et l'intérieur
       _cinCam.position.copy(bcam.pos); _cinCam.lookAt(bcam.look); _cinCam.updateMatrixWorld();
       camera.position.lerp(bcam.pos, bcam.w); camera.quaternion.slerp(_cinCam.quaternion, bcam.w); camera.updateMatrixWorld();
@@ -414,8 +433,8 @@ async function start() {
     sky.update(camera, now / 1000);
     muzzle.update(dt);
     hud.updateTags([                                            // repères nom + vie au-dessus de la tête : joueur (bleu), alliés (vert), miliciens (rouge)
-      { id: 'joueur', kind: 'self', name: 'Joueur', player, health: player.health, dead: player.health.dead, hidden: rig.view === 'fps' },
-      ...allies.map((a) => ({ id: a.id, kind: 'ally', name: a.def.name ?? a.id.replace('allie_', 'Allié '), player: a.player, health: a.health, dead: a.dead, thought: a.brain.thought })),
+      { id: 'joueur', kind: 'self', name: 'Joueur', player, health: player.health, dead: player.health.dead, hidden: rig.view === 'fps' || !!drive?.active },
+      ...allies.map((a) => ({ id: a.id, kind: 'ally', name: a.def.name ?? a.id.replace('allie_', 'Allié '), player: a.player, health: a.health, dead: a.dead, thought: a.brain.thought, hidden: !!a.boarded && !a.player.root.visible })),      // un allié caché à l'intérieur du blindé n'a pas de repère
       ...npcs.map((n) => ({ id: n.id, kind: 'enemy', name: n.def.name ?? n.id.replace('pnj_', 'Milicien '), player: n.player, health: n.health, dead: n.dead, hidden: !!n._asleep, thought: n.brain.thought })),
     ], camera);
     { const d = camera.getWorldDirection(new THREE.Vector3());          // carte de repérage : le haut = où regarde la caméra
@@ -424,7 +443,11 @@ async function start() {
         enemies: npcs.map((n) => ({ pos: n.player.pos, state: n.brain.state, dead: n.dead })), allies: allies.map((a) => ({ pos: a.player.pos, dead: a.dead })) }); }
     blood.update(dt);
     dust.update(dt, [player, ...npcs.filter((n) => !n._asleep).map((n) => n.player)]);           // grains et voiles de poussière ; nuages sous les pas de ceux qui courent
-    { const w = player.state.weapon; hud.setAmmo(w, player.ammo.left(w), player.ammo.size[w] ?? 0, !!player.ammo.reloading); }
+    { const w = player.state.weapon; hud.setAmmo(w, player.ammo.left(w), player.ammo.size[w] ?? 0, !!player.ammo.reloading);
+      let cv = null; if (convoy) { try { cv = convoy.progress(); } catch { /* la barre du bas se passe du convoi */ } }
+      hud.updateDock({ weapon: w, n: player.ammo.left(w), size: player.ammo.size[w] ?? 0, reloading: !!player.ammo.reloading,
+        hp: player.health.hp, frac: player.health.frac, convoy: cv,
+        allies: { alive: allies.filter((a) => !a.dead).length, total: allies.length }, enemies: { dead: npcs.filter((n) => n.dead).length, total: npcs.length } }); }
     {                                                              // mission : tous les miliciens, avec l'escouade
       const m = mission.update({ enemies: { total: npcs.length, dead: npcs.filter((n) => n.dead).length }, squad: { total: allies.length, alive: allies.filter((a) => !a.dead).length } });
       hud.setMission(m.text);

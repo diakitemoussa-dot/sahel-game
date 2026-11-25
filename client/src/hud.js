@@ -5,6 +5,14 @@ import { radarPoint } from './radar.js';
 const pts = (list) => list.map(([x, y]) => `${(100 + x).toFixed(2)},${(100 + y).toFixed(2)}`).join(' ');
 const ARC_POINTS = pts(crescent()), ARROW_POINTS = pts(arrowhead());
 
+import { DRIVE_HELP } from './drivelogic.js';
+
+const DRIVE_SEGMENTS = 24;           // segments de la jauge de vitesse
+const PROMPT_ICONS = {
+  enter: '<path d="M14 4h5v16h-5M3 12h11M10 8l4 4-4 4"/>',          // une flèche qui entre par la porte
+  exit: '<path d="M10 4H5v16h5M21 12H10M17 8l4 4-4 4"/>',           // une flèche qui sort par la porte
+};
+
 export class Hud {
   constructor() {
     this.el = document.getElementById('hud'); this.msg = document.getElementById('msg');
@@ -12,12 +20,14 @@ export class Hud {
     this.danger = add('danger');                                         // bord de l'écran qui pulse en rouge quand la vie est basse
     this.hurt = add('hurt');                                             // flash rouge quand le joueur est touché
     this.hitmark = add('hitmark', '<i></i><i></i><i></i><i></i>');       // croix autour du viseur quand un tir touche
-    this.life = add('life', '<div id="lifebar"><div id="lifefill"></div></div><span id="lifetxt">100</span>');
+    this.life = add('life', '<span id="lifelab">Vie</span><div id="lifebar"><div id="lifefill"></div></div><span id="lifetxt">100</span>');
     this.kills = add('kills');
     this.missionEl = add('mission');                                      // objectif : miliciens éliminés et hommes de l'escouade encore debout
     this.bannerEl = add('banner');                                        // grand message (mission accomplie)
     this.ammoEl = add('ammo');                                            // munitions de l'arme tenue : « 24 / 50 », ou « RECHARGE… »
     this.toastEl = add('toast');
+    this.dock = add('dock');                                              // barre du bas : PV, armes (1, 2, 3), munitions, convoi, escouade, miliciens
+    this._dockHtml = '';
     this.convoyEl = add('convoy');                                         // avancement du convoi de blindés (nombre vivants, pourcentage, position de chacun sur la route)
     this.promptEl = add('prompt');                                        // « E : monter dans le blindé » (cliquable : écrans tactiles)
     this.promptEl.addEventListener('click', (e) => { e.stopPropagation(); this._onPrompt?.(); });
@@ -30,7 +40,38 @@ export class Hud {
     this._t = {};
   }
   /** Invite d'action au bas de l'écran (null : la cacher). */
-  setPrompt(text) { if (text !== this._prompt) { this._prompt = text; this.promptEl.textContent = text ?? ''; this.promptEl.style.display = text ? 'block' : 'none'; } }
+  /** opts (facultatif) : { icon: 'enter' | 'exit', keys: ['E', 'R1'] } : une icône et les touches (clavier, manette) à côté du texte. Cliquable : écrans tactiles. */
+  setPrompt(text, opts) {
+    const key = text ? `${text}|${opts?.icon ?? ''}|${(opts?.keys ?? []).join('/')}` : '';
+    if (key === this._prompt) return;
+    this._prompt = key;
+    if (!text) { this.promptEl.style.display = 'none'; return; }
+    const icon = opts?.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${PROMPT_ICONS[opts.icon] ?? ''}</svg>` : '';
+    const keys = (opts?.keys ?? []).map((k) => `<kbd>${k}</kbd>`).join('');
+    this.promptEl.innerHTML = `${icon}<span>${text}</span>${keys}`;
+    this.promptEl.style.display = 'flex';
+  }
+  /** Interface de conduite : info = { kmh, gear ('D' | 'R' | 'N'), frac (0 à 1) } ; null : la cacher (les commandes du joueur à pied reviennent). */
+  setDrive(info) {
+    if (!this.driveEl) {
+      const rows = (list) => list.map(([k, v]) => `<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
+      const segs = Array.from({ length: DRIVE_SEGMENTS }, (_, i) => `<i style="--c:hsl(${Math.round(52 - 52 * (i / (DRIVE_SEGMENTS - 1)))} 95% 55%)"></i>`).join('');
+      this.driveEl = document.createElement('div'); this.driveEl.id = 'drive';
+      this.driveEl.innerHTML = `<div class="dr-speed"><b>0</b><span>km/h</span><em>N</em></div><div class="dr-bar">${segs}</div>`
+        + `<div class="dr-help"><div class="dr-col"><h4>Clavier · souris</h4>${rows(DRIVE_HELP.pc)}</div><div class="dr-col"><h4>Manette</h4>${rows(DRIVE_HELP.pad)}</div></div>`;
+      document.body.appendChild(this.driveEl);
+      this._drSpeed = this.driveEl.querySelector('.dr-speed b'); this._drGear = this.driveEl.querySelector('.dr-speed em');
+      this._drSegs = [...this.driveEl.querySelectorAll('.dr-bar i')]; this._drKey = '';
+    }
+    document.body.classList.toggle('gm-drive', !!info);
+    this.driveEl.style.display = info ? 'block' : 'none';
+    if (!info) { this._drKey = ''; return; }
+    const kmh = Math.round(info.kmh), lit = Math.round(Math.min(1, info.frac) * DRIVE_SEGMENTS), key = `${kmh}|${info.gear}|${lit}`;
+    if (key === this._drKey) return;                                      // rien n'a changé : on ne touche pas au texte
+    this._drKey = key;
+    this._drSpeed.textContent = kmh; this._drGear.textContent = info.gear;
+    this._drSegs.forEach((s, i) => s.classList.toggle('on', i < lit));
+  }
   onPrompt(fn) { this._onPrompt = fn; }
   /** Panneau du convoi. info : voir Convoy.progress() ou null (pas de convoi : le panneau disparaît). */
   setConvoy(info) {
@@ -50,7 +91,8 @@ export class Hud {
   /** Barre de vie : frac de 0 à 1. */
   setHealth(frac, hp) {
     document.getElementById('lifefill').style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
-    document.getElementById('lifefill').style.background = frac > 0.5 ? '#5bbf4a' : frac > 0.25 ? '#e0a030' : '#d8412f';
+    const c = frac > 0.5 ? '#3ddc5a' : frac > 0.25 ? '#ffa23a' : '#ff3d5a';      // la couleur de fin du dégradé change quand la vie baisse
+    document.getElementById('lifefill').style.background = `linear-gradient(90deg, #ffd23a, ${c})`;
     document.getElementById('lifetxt').textContent = Math.max(0, Math.round(hp));
     this.danger.classList.toggle('on', frac > 0 && frac <= 0.3);
   }
@@ -64,6 +106,25 @@ export class Hud {
     this.ammoEl.classList.toggle('low', !!name && !reloading && n <= Math.ceil(size * 0.25));
     this.ammoEl.classList.toggle('reloading', !!reloading);
     if (name) this.ammoEl.innerHTML = reloading ? `${name}<b>RECHARGE…</b>` : `${name}<b>${n}</b><span> / ${size}</span>`;
+  }
+  /** Barre du bas (style « fiche de combat ») : vie, armes (touches 1, 2, 3) avec celle tenue en surbrillance, munitions du chargeur, convoi, escouade et miliciens.
+   *  info : { weapon, n, size, reloading, hp, frac, convoy (Convoy.progress() ou null), allies: { alive, total }, enemies: { dead, total } }. Ne reconstruit le HTML que si quelque chose change. */
+  updateDock(info) {
+    const { weapon, n, size, reloading, hp, frac, convoy, allies, enemies } = info;
+    const SLOTS = [['rifle', 'Fusil', '1', 'M2 11h24v-2h6v4h-6v2h-4v4h-3v-4H12l-2 3H6v-3H2z'],
+                   ['pistol', 'Pistolet', '2', 'M10 8h20v5h-6v8h-6v-8h-8z'],
+                   ['none', 'Mains nues', '3', 'M10 6h10v6h4v6h-4v4H10z']];
+    const slots = SLOTS.map(([id, name, key, d]) => `<div class="dk-slot${weapon === id ? ' sel' : ''}"><em>${key}</em><svg viewBox="0 0 40 24"><path d="${d}"/></svg><span>${name}</span></div>`).join('');
+    const hasAmmo = weapon === 'rifle' || weapon === 'pistol';
+    const ammo = hasAmmo ? (reloading ? '<b>RECHARGE…</b>' : `<b>${n}</b><span> / ${size}</span>`) : '';
+    const cv = convoy ? `${convoy.alive}/${convoy.total} · ${convoy.done ? 'arrivé' : convoy.alive === 0 ? 'neutralisé' : `${Math.round(convoy.fraction * 100)} %`}` : 'absent';
+    const pct = Math.max(0, Math.min(1, frac)) * 100;
+    const html = `<div class="dk-pv"><span class="dk-lbl">PV</span><b>${Math.max(0, Math.round(hp))}</b><div class="dk-bar"><i style="width:${pct.toFixed(1)}%"></i></div></div>`
+      + `<div class="dk-weap">${slots}</div>`
+      + `<div class="dk-ammo">${ammo}</div>`
+      + `<div class="dk-info"><div>Convoi <b>${cv}</b></div><div>Escouade <b>${allies.alive}/${allies.total}</b></div><div>Miliciens <b>${enemies.dead}/${enemies.total}</b> neutralisés</div></div>`;
+    if (html === this._dockHtml) return;
+    this._dockHtml = html; this.dock.innerHTML = html;
   }
   /** Panneau de mission (3 lignes) ; ne touche au texte que s'il change. */
   setMission(text) {

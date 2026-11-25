@@ -70,6 +70,17 @@ export class Skirmish {
 
   // ------------------------------------------------------------------ attaques du joueur
   /** Le joueur tire. origin, dir : rayon de la caméra (le milieu de l'écran). Renvoie { point, npc, headshot, killed }. */
+  /** Vrai si le viseur (origine, direction) est sur un milicien vivant, sans rien entre les deux. Ne tire pas : sert au tir automatique du bouton TIR. */
+  targetInSight(origin, dir) {
+    for (const n of this.npcs) {
+      if (n.dead || n._asleep) continue;
+      const g = n.player.pos;
+      const r = rayCapsule(origin, dir, 150, { x: g.x, z: g.z, r: CAP_R, y0: g.y, y1: g.y + (n.player.state.crouch ? CAP_H * 0.65 : CAP_H) });
+      if (r && !this.world.blocked(origin, new THREE.Vector3().copy(origin).addScaledVector(dir, r.t))) return true;
+    }
+    return false;
+  }
+
   playerShoot(origin, dir, weapon = 'rifle') {
     const out = { point: null, npc: null, headshot: false, killed: false };
     this._noise(this.player.pos, 1, 'joueur');

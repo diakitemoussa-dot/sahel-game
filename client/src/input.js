@@ -1,6 +1,6 @@
 // Une seule lecture par image : poll() renvoie l'état des commandes, quelle que soit la source.
 // Clavier : touches physiques (KeyW = Z sur AZERTY). Souris : verrouillage du pointeur au clic.
-import { PadHub, PadNav, padCommands } from './gamepad.js';
+import { PadHub, PadNav, padCommands, PAD } from './gamepad.js';
 
 export class Input {
   constructor(canvas, { gamepad = true } = {}) {
@@ -10,13 +10,13 @@ export class Input {
     this.pressed = new Set();
     this.lookX = 0; this.lookY = 0;
     this.mouse = { left: false, right: false };
-    this.t = { move: { x: 0, y: 0 }, fire: false, aim: false, jump: false, crouch: false, weapon: false, wardrobe: false, lookX: 0, lookY: 0 };
+    this.t = { move: { x: 0, y: 0 }, fire: false, aim: false, jump: false, crouch: false, weapon: false, wardrobe: false, reload: false, sprint: false, melee: false, lookX: 0, lookY: 0 };
     this.padPrev = [];
     this.padHub = new PadHub();
     this.padNav = new PadNav();         // navigation des menus à la manette
     this.padStatus = [];               // une ligne par manette détectée, affichée dans l'aide à l'écran
     this.override = {};              // pour les tests automatiques : fusionné dans le résultat de poll()
-    this.isTouch = matchMedia('(pointer: coarse)').matches;
+    this.isTouch = matchMedia('(pointer: coarse)').matches || matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 0 || 'ontouchstart' in window;      // téléphone ou tablette : les boutons tactiles s'affichent
 
     addEventListener('keydown', (e) => { if (!e.repeat) this.pressed.add(e.code); this.keys.add(e.code); });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -37,7 +37,9 @@ export class Input {
       if (e.button === 2) this.mouse.right = false;
     });
     addEventListener('contextmenu', (e) => e.preventDefault());
-    if (this.isTouch) this._buildTouchUI();
+    // boutons tactiles : sur téléphone/tablette, ou dans une fenêtre réduite (ils se cliquent alors à la souris)
+    this.touchUi = this.isTouch || matchMedia('(max-width: 820px), (max-height: 560px)').matches;
+    if (this.touchUi) this._buildTouchUI();
   }
 
   _buildTouchUI() {
@@ -53,6 +55,10 @@ export class Input {
       knob.style.left = 45 + dx * 45 + 'px'; knob.style.top = 45 + dy * 45 + 'px';
     };
     let stickId = null;
+    // à la souris (fenêtre réduite sur ordinateur) : cliquer-glisser dans le stick
+    stick.addEventListener('mousedown', (e) => { stickId = 'mouse'; setStick(e); e.preventDefault(); });
+    addEventListener('mousemove', (e) => { if (stickId === 'mouse') setStick(e); });
+    addEventListener('mouseup', () => { if (stickId === 'mouse') { stickId = null; this.t.move.x = 0; this.t.move.y = 0; knob.style.left = '45px'; knob.style.top = '45px'; } });
     stick.addEventListener('touchstart', (e) => { stickId = e.changedTouches[0].identifier; setStick(e.changedTouches[0]); e.preventDefault(); }, { passive: false });
     stick.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === stickId) setStick(t); e.preventDefault(); }, { passive: false });
     const endStick = (e) => { for (const t of e.changedTouches) if (t.identifier === stickId) {
@@ -68,18 +74,36 @@ export class Input {
     const endLook = (e) => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
     addEventListener('touchend', endLook); addEventListener('touchcancel', endLook);
 
-    const btn = (label, right, bottom, hold, key) => {
-      const b = document.createElement('div'); b.className = 'tbtn'; b.textContent = label;
-      b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; document.body.appendChild(b);
-      b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
-      if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); }
+    // chaque bouton a une icône (SVG) ; le nom ne sert qu'à l'infobulle et aux lecteurs d'écran
+    // pictogrammes blancs sur disque noir (style « tactique ») ; chaque bouton a sa taille : TIR (le plus utilisé) grand, les rares petits
+    // icônes dans le style de l'image de référence : anneau de deux flèches gris autour d'un symbole gris (viewBox 0 0 100 100)
+    const RING = '<g fill="none" stroke="#a8a8a8" stroke-width="6" stroke-linecap="round"><path d="M20.6 33 A34 34 0 0 1 79.4 33"/><path d="M79.4 67 A34 34 0 0 1 20.6 67"/></g>'
+      + '<g fill="#a8a8a8"><path d="M82.4 38.2 L84.6 30 L74.2 36Z"/><path d="M17.6 61.8 L25.8 64 L15.4 70Z"/></g>';
+    const SYM = (inner) => `<g fill="none" stroke="#a8a8a8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
+    const ICON = {
+      // trois balles en diagonale (comme l'image d'origine)
+      fire: RING + `<g fill="none" stroke="#a8a8a8" stroke-width="6" stroke-linecap="round"><circle cx="50" cy="50" r="11"/><path d="M50 33 V38 M50 62 V67 M33 50 H38 M62 50 H67"/></g><circle cx="50" cy="50" r="2.5" fill="#a8a8a8"/>`,
+      jump: RING + SYM('<path d="M50 66 V36 M40 46 L50 36 L60 46"/>'),
+      crouch: RING + SYM('<path d="M50 34 V64 M40 54 L50 64 L60 54"/>'),
+      reload: RING + `<g transform="translate(50 50) rotate(45)" fill="#a8a8a8"><path d="M-17 -6 L-12 -18 L-7 -6 V12 H-17Z"/><path d="M-5 -6 L0 -20 L5 -6 V14 H-5Z"/><path d="M7 -6 L12 -18 L17 -6 V12 H7Z"/></g>`,
+      weapon: RING + SYM('<path d="M38 44 H64 M57 37 L64 44 L57 51 M62 56 H36 M43 49 L36 56 L43 63"/>'),
     };
-    btn('TIR', 24, 24, true, 'fire');
-    btn('VISER', 100, 24, true, 'aim');
-    btn('SAUT', 24, 100, false, 'jump');
-    btn('ACCR.', 100, 100, false, 'crouch');
-    btn('ARME', 176, 24, false, 'weapon');
-    btn('TENUE', 176, 100, false, 'wardrobe');
+    const btn = (label, right, bottom, size, hold, key) => {
+      const b = document.createElement('div'); b.className = 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
+      // TIR : l'image d'origine (assets/icons/tir.png) ; les autres boutons : pictogrammes dessinés
+      b.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${ICON[key]}</svg>`;
+      b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; b.style.width = b.style.height = size + 'px';
+      document.body.appendChild(b);
+      b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
+      b.addEventListener('mousedown', (e) => { this.t[key] = true; e.preventDefault(); e.stopPropagation(); });
+      if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); addEventListener('mouseup', up); }
+    };
+    // disposition à droite (le stick de déplacement reste à gauche) ; TIR : on vise en le maintenant, le tir part dès qu'un milicien est dans le viseur (main.js)
+    btn('TIR', 14, 14, 84, true, 'fire');
+    btn('SAUTER', 108, 14, 64, false, 'jump');
+    btn('CHANGER D\'ARME', 180, 14, 50, false, 'weapon');
+    btn('RECHARGER', 14, 108, 50, false, 'reload');
+    btn('ACCROUPIR', 80, 104, 50, false, 'crouch');
   }
 
   poll() {
@@ -92,12 +116,13 @@ export class Input {
     let jump = p('Space'), crouchToggle = p('KeyC'), toggleWeapon = p('KeyQ');
     let weapon = p('Digit1') ? 'rifle' : p('Digit2') ? 'pistol' : p('Digit3') ? 'none' : null;
     const viewToggle = p('KeyB'), sniperToggle = p('KeyT');
-    let reload = p('KeyR'); const melee = p('KeyV'), wave = p('KeyG'), victory = p('KeyK'), hit = p('KeyH');
+    let reload = p('KeyR'); let melee = p('KeyV'), wave = p('KeyG'), victory = p('KeyK'), hit = p('KeyH');
     const deadToggle = p('KeyM'), downedToggle = p('KeyN');
     let combo = p('KeyX');                                     // X : enchaîne toutes les animations de combat (Triangle sur la manette)
     let kick = p('KeyF');                                      // F : coups de pied seulement (pas de bouton séparé sur la manette)
     const sensDown = p('PageDown') || p('NumpadSubtract'), sensUp = p('PageUp') || p('NumpadAdd');   // sensibilité du viseur : PageDown moins, PageUp plus
-    let interact = p('KeyE');                                  // E : monter dans le blindé, l'arrêter, descendre
+    let interact = p('KeyE');                                  // E : monter dans un véhicule, en descendre
+    let driveBrake = k('Space'), padRT = 0, padLT = 0;         // conduite : frein à main (Espace, A), gâchettes de la manette
     let wardrobeToggle = p('KeyU');                            // U : menu des tenues (Select sur la manette)
     let menuLeft = p('ArrowLeft'), menuRight = p('ArrowRight');
     const menuOk = p('Enter'), menuBack = p('Escape');         // dans le menu seulement (le jeu ignore ses commandes quand il est ouvert)
@@ -120,26 +145,32 @@ export class Input {
       combo = combo || c.combo;                                // Triangle : tous les coups
       kick = kick || c.kick;
       reload = reload || c.reload;                             // Carré : recharge
+      interact = interact || c.interact;                       // R1 : monter dans un véhicule / en descendre
+      padRT = pad.buttons[PAD.RT]?.value ?? 0; padLT = pad.buttons[PAD.LT]?.value ?? 0;      // gâchettes : accélérer / freiner en conduisant
+      driveBrake = driveBrake || !!pad.buttons[PAD.A]?.pressed;                               // A tenu : frein à main
       wardrobeToggle = wardrobeToggle || c.wardrobe;           // Select
       menuLeft = menuLeft || c.menuLeft; menuRight = menuRight || c.menuRight;
     } else {
       this.padPrev = [];
     }
     const nav = this.padNav.update(pad, performance.now());    // croix / A / B / Start pour le menu du jeu
-    if (this.isTouch) {
+    let autoFire = false;                                      // tactile : TIR tenu, le tir part seulement sur une cible
+    if (this.touchUi) {
       mx += this.t.move.x; my += this.t.move.y;
       lookX += this.t.lookX * 0.004; lookY += this.t.lookY * 0.004; this.t.lookX = 0; this.t.lookY = 0;
-      fire = fire || this.t.fire; aim = aim || this.t.aim;
+      aim = aim || this.t.aim || this.t.fire;                 // TIR tenu = on vise ; le tir lui-même est décidé dans main.js (autoFire)
+      autoFire = this.t.fire;
       if (this.t.jump) { jump = true; this.t.jump = false; }
       if (this.t.crouch) { crouchToggle = true; this.t.crouch = false; }
       if (this.t.weapon) { toggleWeapon = true; this.t.weapon = false; }
       if (this.t.wardrobe) { wardrobeToggle = true; this.t.wardrobe = false; }
+      if (this.t.reload) { reload = true; this.t.reload = false; }
     }
     const n = Math.hypot(mx, my);
     if (n > 1) { mx /= n; my /= n; }
     this.pressed.clear();
     return { moveX: mx, moveY: my, lookX, lookY, padLookX, padLookY, fire, aim, sprint, sniperHold, jump, crouchToggle, toggleWeapon, weapon, viewToggle, sniperToggle,
              reload, melee, combo, kick, wave, victory, hit, deadToggle, downedToggle,
-             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, ...this.override };
+             interact, wardrobeToggle, menuLeft, menuRight, menuOk, menuBack, sensDown, sensUp, nav, autoFire, driveBrake, padRT, padLT, ...this.override };
   }
 }
