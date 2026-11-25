@@ -428,7 +428,11 @@ async function start() {
         enemies: npcs.map((n) => ({ pos: n.player.pos, state: n.brain.state, dead: n.dead })), allies: allies.map((a) => ({ pos: a.player.pos, dead: a.dead })) }); }
     blood.update(dt);
     dust.update(dt, [player, ...npcs.filter((n) => !n._asleep).map((n) => n.player)]);           // grains et voiles de poussière ; nuages sous les pas de ceux qui courent
-    { const w = player.state.weapon; hud.setAmmo(w, player.ammo.left(w), player.ammo.size[w] ?? 0, !!player.ammo.reloading); }
+    { const w = player.state.weapon; hud.setAmmo(w, player.ammo.left(w), player.ammo.size[w] ?? 0, !!player.ammo.reloading);
+      let cv = null; if (convoy) { try { cv = convoy.progress(); } catch { /* la barre du bas se passe du convoi */ } }
+      hud.updateDock({ weapon: w, n: player.ammo.left(w), size: player.ammo.size[w] ?? 0, reloading: !!player.ammo.reloading,
+        hp: player.health.hp, frac: player.health.frac, convoy: cv,
+        allies: { alive: allies.filter((a) => !a.dead).length, total: allies.length }, enemies: { dead: npcs.filter((n) => n.dead).length, total: npcs.length } }); }
     {                                                              // mission : tous les miliciens, avec l'escouade
       const m = mission.update({ enemies: { total: npcs.length, dead: npcs.filter((n) => n.dead).length }, squad: { total: allies.length, alive: allies.filter((a) => !a.dead).length } });
       hud.setMission(m.text);

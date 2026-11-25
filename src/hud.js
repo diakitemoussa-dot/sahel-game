@@ -18,6 +18,8 @@ export class Hud {
     this.bannerEl = add('banner');                                        // grand message (mission accomplie)
     this.ammoEl = add('ammo');                                            // munitions de l'arme tenue : « 24 / 50 », ou « RECHARGE… »
     this.toastEl = add('toast');
+    this.dock = add('dock');                                              // barre du bas : PV, armes (1, 2, 3), munitions, convoi, escouade, miliciens
+    this._dockHtml = '';
     this.convoyEl = add('convoy');                                         // avancement du convoi de blindés (nombre vivants, pourcentage, position de chacun sur la route)
     this.promptEl = add('prompt');                                        // « E : monter dans le blindé » (cliquable : écrans tactiles)
     this.promptEl.addEventListener('click', (e) => { e.stopPropagation(); this._onPrompt?.(); });
@@ -65,6 +67,25 @@ export class Hud {
     this.ammoEl.classList.toggle('low', !!name && !reloading && n <= Math.ceil(size * 0.25));
     this.ammoEl.classList.toggle('reloading', !!reloading);
     if (name) this.ammoEl.innerHTML = reloading ? `${name}<b>RECHARGE…</b>` : `${name}<b>${n}</b><span> / ${size}</span>`;
+  }
+  /** Barre du bas (style « fiche de combat ») : vie, armes (touches 1, 2, 3) avec celle tenue en surbrillance, munitions du chargeur, convoi, escouade et miliciens.
+   *  info : { weapon, n, size, reloading, hp, frac, convoy (Convoy.progress() ou null), allies: { alive, total }, enemies: { dead, total } }. Ne reconstruit le HTML que si quelque chose change. */
+  updateDock(info) {
+    const { weapon, n, size, reloading, hp, frac, convoy, allies, enemies } = info;
+    const SLOTS = [['rifle', 'Fusil', '1', 'M2 11h24v-2h6v4h-6v2h-4v4h-3v-4H12l-2 3H6v-3H2z'],
+                   ['pistol', 'Pistolet', '2', 'M10 8h20v5h-6v8h-6v-8h-8z'],
+                   ['none', 'Mains nues', '3', 'M10 6h10v6h4v6h-4v4H10z']];
+    const slots = SLOTS.map(([id, name, key, d]) => `<div class="dk-slot${weapon === id ? ' sel' : ''}"><em>${key}</em><svg viewBox="0 0 40 24"><path d="${d}"/></svg><span>${name}</span></div>`).join('');
+    const hasAmmo = weapon === 'rifle' || weapon === 'pistol';
+    const ammo = hasAmmo ? (reloading ? '<b>RECHARGE…</b>' : `<b>${n}</b><span> / ${size}</span>`) : '';
+    const cv = convoy ? `${convoy.alive}/${convoy.total} · ${convoy.done ? 'arrivé' : convoy.alive === 0 ? 'neutralisé' : `${Math.round(convoy.fraction * 100)} %`}` : 'absent';
+    const pct = Math.max(0, Math.min(1, frac)) * 100;
+    const html = `<div class="dk-pv"><span class="dk-lbl">PV</span><b>${Math.max(0, Math.round(hp))}</b><div class="dk-bar"><i style="width:${pct.toFixed(1)}%"></i></div></div>`
+      + `<div class="dk-weap">${slots}</div>`
+      + `<div class="dk-ammo">${ammo}</div>`
+      + `<div class="dk-info"><div>Convoi <b>${cv}</b></div><div>Escouade <b>${allies.alive}/${allies.total}</b></div><div>Miliciens <b>${enemies.dead}/${enemies.total}</b> neutralisés</div></div>`;
+    if (html === this._dockHtml) return;
+    this._dockHtml = html; this.dock.innerHTML = html;
   }
   /** Panneau de mission (3 lignes) ; ne touche au texte que s'il change. */
   setMission(text) {

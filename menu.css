@@ -116,3 +116,11 @@ body.gm-menu #pbtn { display: none; }
 
 #ammo { display: none !important; }      /* le compteur de munitions est retiré de l'écran */
 .tbtn svg { width: 56%; height: 56%; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px #000); }
+body.gm-menu #dock, body.gm-no-aide #dock { display: none !important; }
+@media (max-width: 820px), (max-height: 560px) {
+  #dock { height: 56px; gap: 4px; padding: 0 6px; }
+  .dk-pv { display: none; }
+  .dk-info { font-size: 11px; min-width: 120px; }
+  .dk-slot { width: 66px; height: 44px; } .dk-slot span { display: none; } .dk-slot svg { width: 36px; height: 18px; }
+  .dk-ammo { min-width: 0; font-size: 20px; border-left: 0; padding: 0 6px; } .dk-ammo b { font-size: 14px; }
+}
