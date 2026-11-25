@@ -19,12 +19,18 @@ const WALK_INPUT = { moveX: 0, moveY: 1, aim: false, fire: false, sprint: false 
 
 export class DriveVehicle {
   /** def : { id, pos: [x, z], yaw } ; cfg : config/drive.json ; gltf : le modèle du blindé. */
-  constructor({ def, cfg, gltf, scene, world, player, getAllies, hud, skirmish }) {
+  constructor({ def, cfg, gltf = null, root = null, prop = null, scene, world, player, getAllies, hud, skirmish, flags = null }) {
     Object.assign(this, { def, cfg, world, player, getAllies, hud, skirmish });
-    this.root = clone(gltf.scene);
-    this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    tuneVehicle(this.root);                                        // peinture un peu métallisée, reflet de ciel
-    scene.add(this.root);
+    if (root) {                                                    // un décor déjà posé dans le monde (props.json) : on le conduit tel quel
+      this.root = root;
+      if (prop?.colHandle) { world.removeCollision?.(prop.colHandle); prop.colHandle = null; }      // sa collision statique disparaît : c'est la boîte mobile qui le protège
+      if (prop?.collider) { const i = world.colliders?.indexOf(prop.collider) ?? -1; if (i >= 0) world.colliders.splice(i, 1); prop.collider = null; }
+    } else {
+      this.root = clone(gltf.scene);
+      this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      tuneVehicle(this.root);                                      // peinture un peu métallisée, reflet de ciel
+      scene.add(this.root);
+    }
     this.wheels = ['Roue_AVG', 'Roue_AVD', 'Roue_ARG', 'Roue_ARD'].map((n) => this.root.getObjectByName(n));
     this.base = this.wheels.map((w) => w?.position.y ?? 0); this.susp = this.wheels.map(() => 0); this.wheelAngle = 0;
     this.box = { t: 'b', x: 0, y: 0, hx: cfg.box?.[0] ?? 2.1, hy: cfg.box?.[1] ?? 5.0, yaw: 0 };          // collision mobile : les autres personnages le contournent
@@ -39,6 +45,7 @@ export class DriveVehicle {
     this.camYawOff = 0; this.lookIdle = 0; this.camYaw = this.drv.heading;
     this.v3 = new THREE.Vector3(); this.v3b = new THREE.Vector3();
     this._pose(true);
+    this.flag = flags?.add(this.root, cfg.flag, () => [Math.sin(this.drv.heading) * this.drv.v, Math.cos(this.drv.heading) * this.drv.v]);      // drapeau du Mali sur l'antenne
   }
 
   get driving() { return this.state === 'driving'; }
@@ -257,7 +264,7 @@ export class DriveVehicle {
       this.drv.step(dt, driveCommands(inp));
       this._collide(dt);
       this._pose(false, dt);
-      this.wheelAngle += (this.drv.v * dt) / 0.85;
+      this.wheelAngle += (this.drv.v * dt) / (this.cfg.wheelRadius ?? 0.85);
       for (const w of this.wheels) if (w) w.rotation.x = this.wheelAngle;
       const p = this.player;
       p.pos.set(this.pos.x, this.pos.y + 1.2, this.pos.z); p.root.position.copy(p.pos); p.vy = 0;
@@ -318,11 +325,24 @@ export class DriveSystem {
 }
 
 /** Charge config/drive.json et le modèle du blindé. Renvoie null si le fichier manque (le jeu démarre quand même). */
-export async function loadDrive({ scene, world, player, getAllies, hud, skirmish }) {
+export async function loadDrive({ scene, world, player, getAllies, hud, skirmish, props = [], flags = null }) {
   const r = await fetch(`config/drive.json?v=${ASSET_VERSION}`);
   if (!r.ok) return null;
   const cfg = await r.json();
-  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${cfg.file}?v=${ASSET_VERSION}`);
-  const vehicles = cfg.vehicles.map((def) => new DriveVehicle({ def, cfg, gltf, scene, world, player, getAllies, hud, skirmish }));
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), models = new Map();
+  const vehicles = [];
+  for (const def of cfg.vehicles) {
+    const c = { ...cfg, ...def };                                      // les réglages propres au véhicule remplacent ceux par défaut
+    const base = { def, cfg: c, scene, world, player, getAllies, hud, skirmish, flags };
+    if (def.prop) {                                                    // un décor de props.json : on conduit le modèle déjà posé
+      const prop = props.find((p) => p.def.id === def.prop);
+      if (!prop) { console.warn(`véhicule à conduire : décor ${def.prop} introuvable`); continue; }
+      vehicles.push(new DriveVehicle({ ...base, root: prop.root, prop }));
+    } else {
+      const file = def.file ?? cfg.file;
+      if (!models.has(file)) models.set(file, await loader.loadAsync(`${file}?v=${ASSET_VERSION}`));
+      vehicles.push(new DriveVehicle({ ...base, gltf: models.get(file) }));
+    }
+  }
   return new DriveSystem({ vehicles, hud, player });
 }

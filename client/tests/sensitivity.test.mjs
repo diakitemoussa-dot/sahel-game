@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BASE, lookScale, stepUser, loadUser, saveUser, MIN, MAX } from '../src/sensitivity.js';
 
-test('par défaut le viseur est plus lent qu avant (facteur < 1)', () => {
+test('par défaut le viseur est plus sensible qu avant (0,55)', () => {
   assert.equal(lookScale(), BASE);
-  assert.ok(BASE < 0.7 && BASE > 0.3);
+  assert.ok(BASE > 0.55 && BASE < 1.2);
 });
 
 test('quand il vise le viseur ralentit encore, davantage en tireur d élite', () => {

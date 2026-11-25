@@ -1,9 +1,9 @@
 // Sensibilité du viseur (logique pure, testée sans navigateur).
 // Les commandes (souris, stick droit, doigt) donnent un angle brut ; on le multiplie par un facteur :
 //   BASE (0,55 : réglage par défaut, bien plus lent qu'avant) x réglage du joueur (30 % à 250 %) x ralentissement quand il vise.
-export const BASE = 0.55;
-export const AIM = 0.65;          // clic droit maintenu : le viseur ralentit pour placer le tir
-export const SNIPER = 0.45;       // tireur d'élite (T ou L2) : encore plus lent
+export const BASE = 0.9;                 // (0,55 avant : trop lent ; environ +65 %)
+export const AIM = 0.8;           // clic droit maintenu : le viseur ralentit un peu pour placer le tir
+export const SNIPER = 0.6;        // tireur d'élite (T ou L2) : encore plus lent
 export const MIN = 0.3, MAX = 2.5, STEP = 0.1;
 const KEY = 'sahel.sensitivity';
 

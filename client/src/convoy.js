@@ -102,7 +102,7 @@ export class ConvoyLogic {
 
 export class Convoy {
   /** cfg : config/convoy.json ; road : { points } ; world ; smoke (SmokeSystem, facultatif) ; hud. */
-  constructor({ cfg, path, world, scene, gltf, collisionGeo, smoke = null, hud = null }) {
+  constructor({ cfg, path, world, scene, gltf, collisionGeo, smoke = null, hud = null, flags = null }) {
     this.cfg = cfg; this.path = path; this.world = world; this.scene = scene; this.smoke = smoke; this.hud = hud;
     // hauteur RÉELLE du sable sous les roues (rayon sur les triangles proches de la piste) : la carte de hauteur est trop grossière et les roues s'enfonçaient ou flottaient
     this._ray = new THREE.Raycaster(); this._ray.firstHitOnly = true; this._from = new THREE.Vector3(); this._down = new THREE.Vector3(0, -1, 0);
@@ -116,7 +116,9 @@ export class Convoy {
       const box = { t: 'b', x: 0, y: 0, hx: cfg.box?.[0] ?? 2.1, hy: cfg.box?.[1] ?? 5.0, yaw: 0 };                  // collision mobile (voir world.addDynamic)
       world.addDynamic?.(box);
       const wheels = ['Roue_AVG', 'Roue_AVD', 'Roue_ARG', 'Roue_ARD'].map((n) => root.getObjectByName(n));            // avant gauche, avant droite, arrière gauche, arrière droite
-      return { v, root, box, heading: 0, pitch: 0, roll: 0, wheelAngle: 0, wheels: wheels.filter(Boolean), susp: wheels.map(() => 0), base: wheels.map((w) => w?.position.y ?? 0), allWheels: wheels, burning: null };
+      const it = { v, root, box, heading: 0, pitch: 0, roll: 0, wheelAngle: 0, wheels: wheels.filter(Boolean), susp: wheels.map(() => 0), base: wheels.map((w) => w?.position.y ?? 0), allWheels: wheels, burning: null };
+      it.flag = flags?.add(root, cfg.flag, () => [Math.sin(it.heading) * it.v.v, Math.cos(it.heading) * it.v.v]);       // drapeau du Mali sur l'antenne : il flotte avec le vent et la vitesse
+      return it;
     });
     this.items.forEach((it, i) => this._pose(it, true));
     this.onDown = null;                                                         // appelé quand un blindé est neutralisé
@@ -197,6 +199,7 @@ export class Convoy {
   }
 
   _neutralise(it) {
+    it.flag?.setVisible(false);                                                 // le drapeau brûle avec le blindé
     it.root.traverse((o) => {                                                   // peinture noircie de suie
       if (!o.isMesh) return;
       const m = o.material; if (m.color) m.color.multiplyScalar(0.18);
@@ -212,7 +215,7 @@ export class Convoy {
 }
 
 /** Charge le convoi décrit par config/convoy.json. Renvoie null si le fichier manque ou si rien ne peut être chargé (le jeu démarre quand même). */
-export async function loadConvoy({ scene, world, smoke, hud }) {
+export async function loadConvoy({ scene, world, smoke, hud, flags = null }) {
   const r = await fetch(`config/convoy.json?v=${ASSET_VERSION}`);
   if (!r.ok) return null;
   const cfg = await r.json();
@@ -221,5 +224,5 @@ export async function loadConvoy({ scene, world, smoke, hud }) {
   const path = buildPath(road.points);
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const gltf = await loader.loadAsync(`${cfg.file}?v=${ASSET_VERSION}`);
-  return new Convoy({ cfg, path, world, scene, gltf, smoke, hud });
+  return new Convoy({ cfg, path, world, scene, gltf, smoke, hud, flags });
 }

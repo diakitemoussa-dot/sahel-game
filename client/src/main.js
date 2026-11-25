@@ -11,7 +11,8 @@ import { loadNpcs, loadNpcDefs } from './npc.js';
 import { giveSkin } from './skins.js';
 import { Skirmish } from './skirmish.js';
 import { Sky, SUN, HORIZON } from './sky.js';
-import { DustSystem } from './dust.js';
+import { DustSystem, wind } from './dust.js';
+import { FlagSystem } from './flag.js';
 import { MuzzleFlash } from './muzzle.js';
 import { BloodFx } from './blood.js';
 import { loadProps } from './props.js';
@@ -74,7 +75,7 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 250 });
 scene.add(sun, sun.target);
 
-const PLAYER_ANIM_BOOST = 1.25;                                      // +25 % sur toutes les animations du joueur (et ses déplacements, pour que les pas collent au sol)
+const PLAYER_ANIM_BOOST = 1.6;                                       // +60 % sur les déplacements et les actions du joueur (et ses pas, pour qu'ils collent au sol)
 const input = new Input(canvas, { gamepad: !new URLSearchParams(location.search).has('autotest') });
 const tracers = [];
 
@@ -184,6 +185,7 @@ async function start() {
   muzzle.renderer = renderer; muzzleRef = muzzle;
   addEventListener('resize', () => muzzle._resize());
   const dust = new DustSystem(scene, world, camera);
+  const flags = new FlagSystem(scene, wind);                                    // drapeaux du Mali sur l'antenne des véhicules (flag.js) : ils flottent avec le vent
   dust.renderer = renderer; dustRef = dust;
   addEventListener('resize', () => dust._resize());
   // fumées de champ de bataille : foyers (config/smoke.json), véhicules en feu (config/props.json) et missiles qui tombent de temps en temps
@@ -248,14 +250,14 @@ async function start() {
   air.targetPicker = () => skirmish.airTarget();                              // les tirs aériens se rabattent sur les miliciens
   skirmish.onLaunch = (pos) => air.callSupport(pos);                           // et sur un lance-missiles qui vient de tirer sur le convoi
   let convoy = null, roadPts = [], convoyBroken = false;                                                          // convoi de blindés qui roulent doucement ; des miliciens lance-missiles les visent (convoy.js, skirmish.js)
-  if (!testing || /^convoi_/.test(scenario)) { try { convoy = await loadConvoy({ scene, world, smoke, hud }); if (convoy) { skirmish.convoy = convoy; roadPts = convoy.path.pts.filter((_, i) => i % 8 === 0).map((p) => ({ x: p[0], z: -p[1] })); } } catch (e) { console.error('convoi non chargé', e); } }
+  if (!testing || /^convoi_/.test(scenario)) { try { convoy = await loadConvoy({ scene, world, smoke, hud, flags }); if (convoy) { skirmish.convoy = convoy; roadPts = convoy.path.pts.filter((_, i) => i % 8 === 0).map((p) => ({ x: p[0], z: -p[1] })); } } catch (e) { console.error('convoi non chargé', e); } }
   const convoys = await loadConvoys(props, { player, getAllies: () => allies, world, hud, skirmish }).catch((e) => { console.error('blindés non chargés', e); return []; });
   let drive = null, driveBroken = false;                                    // véhicules à conduire (drive.js) : on s'approche, « Entrer », les alliés montent, on roule
-  if (!testing || /^conduite_/.test(scenario)) { try { drive = await loadDrive({ scene, world, player, getAllies: () => allies, hud, skirmish }); } catch (e) { console.error('véhicules à conduire non chargés', e); } }
+  if (!testing || /^conduite_/.test(scenario)) { try { drive = await loadDrive({ scene, world, player, getAllies: () => allies, hud, skirmish, props, flags }); } catch (e) { console.error('véhicules à conduire non chargés', e); } }
   wardrobe.addTeam(allies.map((a) => a.outfit).filter(Boolean));            // les alliés portent la tenue choisie par le joueur (et la changent avec lui)
   hud.hideMessage();
   menu.setLoaded();
-  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, convoys, convoy, drive, governor, sky, dust, hud, muzzle, blood, props, allies,
+  window.__game = { player, rig, input, world, camera, wardrobe, npcs, skirmish, convoys, convoy, drive, flags, governor, sky, dust, hud, muzzle, blood, props, allies,
     spawnAllies: async () => { const a = await loadNpcs(scene, world, lib, npcDefs.allies, 'ally'); a.forEach((x) => { skirmish.addAlly(x); allies.push(x); }); await wardrobe.addTeam(a.map((x) => x.outfit).filter(Boolean)); return a; }, getYaw: () => yaw, look: (y, p) => { yaw = y; pitch = p; }, menu };     // accès pour les tests automatiques
   const auto = makeAutotest(new URLSearchParams(location.search).get('autotest'));
 
@@ -402,6 +404,7 @@ async function start() {
         if (r.yaw !== undefined) { yaw = r.yaw; pitch = 0.05; }                            // à la descente, la caméra se place derrière le joueur, qui regarde le blindé
       } catch (e) { driveBroken = true; console.error('conduite : erreur, elle est arrêtée', e); drive.abort(e); }
     }
+    flags.update(dt);                                           // les drapeaux suivent leur véhicule (déjà déplacé) et le vent
     player.locked = convoys.some((c) => c.gunnerFree);          // tireur à la trappe : il garde ses commandes de tir mais ne marche pas
     if (!bctl) player.step(dt, inp, world, yaw);
     rig.update(dt, bctl ? bctl.focus : player.pos, yaw, pitch, bctl ? { ...player.state, crouch: false } : { ...player.state }, world);      // (accroupi : la caméra descend, sauf quand le blindé pilote le joueur)

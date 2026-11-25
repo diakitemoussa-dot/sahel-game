@@ -1,6 +1,6 @@
 # Conduire un blindé
 
-Deux blindés sont garés près du point de départ (`client/config/drive.json`). Le joueur peut en conduire un, avec ses alliés à bord.
+Trois véhicules garés sont conduisibles (`client/config/drive.json`) : deux blindés et un **Technical** (pick-up armé, `technique_1`, près du point de départ). Le Technical garde son modèle de décor (`props.json`) : sa collision statique est remplacée par la boîte mobile. Il n'a que 2 places (conducteur et tireur sur le plateau).
 
 ## Déroulement
 1. **S'approcher** (moins de 7 m) : le bouton **Entrer** apparaît (icône de porte, touches `E` et `R1`) ; il est aussi cliquable sur écran tactile.
@@ -22,7 +22,7 @@ Deux blindés sont garés près du point de départ (`client/config/drive.json`)
 
 ## Où est le code
 - `src/drivelogic.js` : physique (accélération, freinage, recul, braquage — volant à droite = le cap diminue —, frein à main) et liste des commandes — logique pure, testée (`tests/drivelogic.test.mjs`).
-- `src/drive.js` : `DriveVehicle` (modèle, roues, sol, collisions, passagers, tireur, caméra), `DriveSystem` (bouton « Entrer », véhicule actif), `loadDrive`.
+- `src/drive.js` : `DriveVehicle` (modèle, roues, sol, collisions, passagers, tireur, caméra), `DriveSystem` (bouton « Entrer », véhicule actif), `loadDrive`. Un véhicule peut réutiliser un décor (`"prop": "id"`) ou un modèle à part (`"file"`) ; ses réglages remplacent ceux par défaut.
 - `src/hud.js` : `setPrompt(texte, { icon, keys })` et `setDrive({ kmh, gear, frac })`.
 - `src/input.js`, `src/gamepad.js` : `R1` = interagir, gâchettes `RT` / `LT`, frein à main.
 - `src/main.js` : appelle la conduite à chaque image, remplace la caméra du joueur par la caméra de poursuite, rend les commandes à la descente.
