@@ -251,7 +251,7 @@ async function start() {
   if (!testing || /^convoi_/.test(scenario)) { try { convoy = await loadConvoy({ scene, world, smoke, hud }); if (convoy) { skirmish.convoy = convoy; roadPts = convoy.path.pts.filter((_, i) => i % 8 === 0).map((p) => ({ x: p[0], z: -p[1] })); } } catch (e) { console.error('convoi non chargé', e); } }
   const convoys = await loadConvoys(props, { player, getAllies: () => allies, world, hud, skirmish }).catch((e) => { console.error('blindés non chargés', e); return []; });
   let drive = null, driveBroken = false;                                    // véhicules à conduire (drive.js) : on s'approche, « Entrer », les alliés montent, on roule
-  if (!testing || /^conduite_/.test(scenario)) { try { drive = await loadDrive({ scene, world, player, getAllies: () => allies, hud, skirmish }); } catch (e) { console.error('véhicules à conduire non chargés', e); } }
+  if (!testing || /^conduite_/.test(scenario)) { try { drive = await loadDrive({ scene, world, player, getAllies: () => allies, hud, skirmish, props }); } catch (e) { console.error('véhicules à conduire non chargés', e); } }
   wardrobe.addTeam(allies.map((a) => a.outfit).filter(Boolean));            // les alliés portent la tenue choisie par le joueur (et la changent avec lui)
   hud.hideMessage();
   menu.setLoaded();
