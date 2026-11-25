@@ -75,29 +75,29 @@ export class Input {
     addEventListener('touchend', endLook); addEventListener('touchcancel', endLook);
 
     // chaque bouton a une icône (SVG) ; le nom ne sert qu'à l'infobulle et aux lecteurs d'écran
+    // pictogrammes blancs sur disque noir (style « tactique ») ; chaque bouton a sa taille : TIR (le plus utilisé) grand, les rares petits
     const ICON = {
-      fire: '<path d="M12 3 L16 10 V19 H8 V10 Z"/><path d="M8 14 H16"/>',                                   // balle
-      aim: '<circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1"/>',   // visée
-      jump: '<path d="M12 19V5M6 11l6-6 6 6"/>',                                                          // sauter
-      crouch: '<path d="M12 5v14M6 13l6 6 6-6"/>',                                                        // s'accroupir
-      reload: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/>',                               // recharger
-      weapon: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',                                                     // changer d'arme
+      fire: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="18" cy="12" r="4.5"/><path d="M12 19h12l2 9-2 1 1 10h-5l-1-9h-2l-1 9h-5l2-12z"/><path d="M20 20h22v3H20z"/><path d="M18 19l9 2-2 4-8-2z"/></g>',
+      jump: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="24" cy="10" r="4"/><path d="M21 17h6v11h-6z"/><path d="M21 18l-9-7-2 3 8 7z"/><path d="M27 18l9-7 2 3-8 7z"/><path d="M21 27l-6 12 3 1 5-9 1 8 3 0-1-11z"/><path d="M27 27l6 12-3 1-5-9-1 8-3 0 1-11z"/></g>',
+      crouch: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><circle cx="20" cy="15" r="4"/><path d="M14 22h11l6 9h-4l-4-4-2 9h-5l1-11z"/></g>',
+      reload: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><circle cx="24" cy="24" r="12" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M24 6v8M24 34v8M6 24h8M34 24h8" stroke="#fff" stroke-width="2.5"/><g transform="rotate(45 24 24)" fill="#fff" stroke="none"><path d="M21 14h6l1 12h-8z"/><path d="M21 27h6v4h-6z"/></g>',
+      weapon: '<circle cx="24" cy="24" r="23" fill="#111" stroke="none"/><g fill="#fff" stroke="none"><path d="M10 18h22l-5-5 2-2 8 8-8 8-2-2 5-5H10z"/><path d="M38 30H16l5 5-2 2-8-8 8-8 2 2-5 5h22z"/></g>',
     };
-    const btn = (label, right, bottom, hold, key) => {
+    const btn = (label, right, bottom, size, hold, key) => {
       const b = document.createElement('div'); b.className = 'tbtn'; b.title = label; b.setAttribute('aria-label', label);
-      b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[key]}</svg>`;
-      b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; document.body.appendChild(b);
+      b.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[key]}</svg>`;
+      b.style.right = right + 'px'; b.style.bottom = bottom + 'px'; b.style.width = b.style.height = size + 'px';
+      document.body.appendChild(b);
       b.addEventListener('touchstart', (e) => { this.t[key] = true; e.preventDefault(); }, { passive: false });
       b.addEventListener('mousedown', (e) => { this.t[key] = true; e.preventDefault(); e.stopPropagation(); });
       if (hold) { const up = () => { this.t[key] = false; }; b.addEventListener('touchend', up); b.addEventListener('touchcancel', up); addEventListener('mouseup', up); }
     };
-    // boutons à droite (le stick de déplacement reste à gauche) : les commandes essentielles seulement
-    // TIR : on vise en le maintenant ; le tir part tout seul dès que le viseur est sur un milicien (géré dans main.js)
-    btn('TIR', 16, 16, true, 'fire');
-    btn('SAUT', 84, 16, false, 'jump');
-    btn('ARME', 152, 16, false, 'weapon');
-    btn('ACCROUPIR', 16, 84, false, 'crouch');
-    btn('RECHARGER', 84, 84, false, 'reload');
+    // disposition à droite (le stick de déplacement reste à gauche) ; TIR : on vise en le maintenant, le tir part dès qu'un milicien est dans le viseur (main.js)
+    btn('TIR', 14, 14, 84, true, 'fire');
+    btn('SAUTER', 108, 14, 64, false, 'jump');
+    btn('CHANGER D\'ARME', 180, 14, 50, false, 'weapon');
+    btn('RECHARGER', 14, 108, 50, false, 'reload');
+    btn('ACCROUPIR', 80, 104, 50, false, 'crouch');
   }
 
   poll() {
