@@ -5,8 +5,6 @@ import { radarPoint } from './radar.js';
 const pts = (list) => list.map(([x, y]) => `${(100 + x).toFixed(2)},${(100 + y).toFixed(2)}`).join(' ');
 const ARC_POINTS = pts(crescent()), ARROW_POINTS = pts(arrowhead());
 
-import { DRIVE_HELP } from './drivelogic.js';
-
 const DRIVE_SEGMENTS = 24;           // segments de la jauge de vitesse
 const PROMPT_ICONS = {
   enter: '<path d="M14 4h5v16h-5M3 12h11M10 8l4 4-4 4"/>',          // une flèche qui entre par la porte
@@ -54,11 +52,9 @@ export class Hud {
   /** Interface de conduite : info = { kmh, gear ('D' | 'R' | 'N'), frac (0 à 1) } ; null : la cacher (les commandes du joueur à pied reviennent). */
   setDrive(info) {
     if (!this.driveEl) {
-      const rows = (list) => list.map(([k, v]) => `<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
       const segs = Array.from({ length: DRIVE_SEGMENTS }, (_, i) => `<i style="--c:hsl(${Math.round(52 - 52 * (i / (DRIVE_SEGMENTS - 1)))} 95% 55%)"></i>`).join('');
       this.driveEl = document.createElement('div'); this.driveEl.id = 'drive';
-      this.driveEl.innerHTML = `<div class="dr-speed"><b>0</b><span>km/h</span><em>N</em></div><div class="dr-bar">${segs}</div>`
-        + `<div class="dr-help"><div class="dr-col"><h4>Clavier · souris</h4>${rows(DRIVE_HELP.pc)}</div><div class="dr-col"><h4>Manette</h4>${rows(DRIVE_HELP.pad)}</div></div>`;
+      this.driveEl.innerHTML = `<div class="dr-speed"><b>0</b><span>km/h</span><em>N</em></div><div class="dr-bar">${segs}</div>`;
       document.body.appendChild(this.driveEl);
       this._drSpeed = this.driveEl.querySelector('.dr-speed b'); this._drGear = this.driveEl.querySelector('.dr-speed em');
       this._drSegs = [...this.driveEl.querySelectorAll('.dr-bar i')]; this._drKey = '';
