@@ -12,7 +12,7 @@ export class Hud {
     this.danger = add('danger');                                         // bord de l'écran qui pulse en rouge quand la vie est basse
     this.hurt = add('hurt');                                             // flash rouge quand le joueur est touché
     this.hitmark = add('hitmark', '<i></i><i></i><i></i><i></i>');       // croix autour du viseur quand un tir touche
-    this.life = add('life', '<div id="lifebar"><div id="lifefill"></div></div><span id="lifetxt">100</span>');
+    this.life = add('life', '<span id="lifelab">Vie</span><div id="lifebar"><div id="lifefill"></div></div><span id="lifetxt">100</span>');
     this.kills = add('kills');
     this.missionEl = add('mission');                                      // objectif : miliciens éliminés et hommes de l'escouade encore debout
     this.bannerEl = add('banner');                                        // grand message (mission accomplie)
@@ -50,7 +50,8 @@ export class Hud {
   /** Barre de vie : frac de 0 à 1. */
   setHealth(frac, hp) {
     document.getElementById('lifefill').style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
-    document.getElementById('lifefill').style.background = frac > 0.5 ? '#5bbf4a' : frac > 0.25 ? '#e0a030' : '#d8412f';
+    const c = frac > 0.5 ? '#3ddc5a' : frac > 0.25 ? '#ffa23a' : '#ff3d5a';      // la couleur de fin du dégradé change quand la vie baisse
+    document.getElementById('lifefill').style.background = `linear-gradient(90deg, #ffd23a, ${c})`;
     document.getElementById('lifetxt').textContent = Math.max(0, Math.round(hp));
     this.danger.classList.toggle('on', frac > 0 && frac <= 0.3);
   }
